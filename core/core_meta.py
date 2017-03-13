@@ -27,9 +27,7 @@ class _CoreDefineClass(type):
             value: value of attribute name."""
 
         if cls.__init and name not in _MUTABLE_ATTRIBUTES:
-            http: // pydoc.net / Python / protorpc / 0.1
-            .6
-            .7 / protorpc.messages /
+
 
 
 
