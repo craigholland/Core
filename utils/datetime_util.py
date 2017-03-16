@@ -19,7 +19,7 @@ def asDict(date_obj):
           'mi': tt.tm_min,
           'sc': tt.tm_sec,
           'DYint': tt.tm_wday,
-          'YRDYint': tt.yday,
+          'YRDYint': tt.tm_yday,
           'isdst': tt.tm_isdst
           }
 

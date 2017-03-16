@@ -4,7 +4,7 @@ import dateutil.tz as tz
 import os
 import sys
 
-ROOT_PATH = os.path.abspath('.')
+ROOT_PATH = os.path.abspath('.').replace('\\', '/')
 DATA_PATH = ROOT_PATH + '/data'
 
 LOCAL_TIMEZONE = tz.tzlocal()
