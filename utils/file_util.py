@@ -1,6 +1,7 @@
 import os, sys
 
 from utils import constants
+from errors import err_msg
 
 class File(object):
   """Basic File Object class."""
@@ -38,7 +39,7 @@ class File(object):
       return open(path, 'w+b')
 
   def enableAllPermissions(self, set_value=True):
-    for k, v in self._permissions:
+    for k, v in self._permissions.iteritems():
       self._permissions[k] = set_value
 
   @property
