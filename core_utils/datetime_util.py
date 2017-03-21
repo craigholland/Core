@@ -131,8 +131,46 @@ class TimeZoneOffset(dt.tzinfo):
     """
     return dt.timedelta(0)
 
+def _date_to_datetime(value):
+  """Convert a date to a datetime for Cloud Datastore storage.
 
-"""Below is unused ecorator test"""
+  Args:
+    value: A datetime.date object.
+
+  Returns:
+    A datetime object with time set to 0:00.
+  """
+  if not isinstance(value, dt.date):
+    raise TypeError('Cannot convert to datetime expected date value; '
+                    'received %s' % value)
+  return dt.datetime(value.year, value.month, value.day)
+
+
+def _time_to_datetime(value):
+  """Convert a time to a datetime for Cloud Datastore storage.
+
+  Args:
+    value: A datetime.time object.
+
+  Returns:
+    A datetime object with date set to 1970-01-01.
+  """
+  if not isinstance(value, dt.time):
+    raise TypeError('Cannot convert to datetime expected time value; '
+                    'received %s' % value)
+  return dt.datetime(1970, 1, 1,
+                           value.hour, value.minute, value.second,
+                           value.microsecond)
+
+
+
+
+
+
+
+
+
+"""Below is unused decorator test"""
 
 def forceUTC(func):
   """Decorator that converts any datetime object to UTC."""
