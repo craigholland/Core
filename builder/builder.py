@@ -1,86 +1,46 @@
 """Methods and Classes providing functionality for Builder mechanism."""
-import collections
-from utils import constants
-from utils import log_util
+
+from core_utils import constants
+from core_utils import log_util
 
 """
-Builder() is a utility that builds an "object-oriented" dictionary.  Rather than
- a central repository that
- contains all definitions, Builder allows for more section-specific definitions
- to be defined in their local branch.  Further, since the parent Builder object
- is actually instantiated at the root level, then child objects can reference
- other child objects from other branches.
-
-e.g-
-Life = Builder('General definition of biologic material')
-Life.file = 'build_life.json' (auto-generated filename)
-
-root/build_life.py:
-PARENT =  "root"
-DEFINITONS = {
-    "Animal": "Definition of animals"
-    "Plant" : "Definition of plants"
-    "Fungi": "Defintion of fungi"
-}
-
-root/some_branch/build_life.py:
-PARENT = "Animal"
-DEFINITIONS = {
-  "Fish": "Definition of Fish"
-  "Bird": "Definition of Birds"
-  "Mammal": "Definition of Mammals
-
-root/some_other_branch/build_life.py:
-PARENT = "Mammal"
-DEFINITIONS = {
-  "Horse" : "Definition of Horse"
-  "Donkey" : "Definition of Donkey"
-
-root/yet_another_branch/build_life.py:
-PARENT = "Horse, Donkey"
-DEFINITIONS = {
-  "Mule" : "Definition of Mule"
-
-root/from_any_branch/from_any_file.py
-from root import Life
-All_life = Life()
-All_life.Plant = "Def of plants"
-All_life.Keys = ['Animal','Plant','Fungi']
-All_life.Animal.Keys = ['Fish', 'Bird', 'Mammal']
-
->> print All_life.Animal.Horse.Donkey == All_life.Animal.Mule.Donkey
-True
->> All_life.FindKey('Birds')
-'All_life.Animal.Birds'
->> All_life.FindKey('Human')
-False
->> All_life.FindKey('Mule')
-['All_life.Animal.Mammal.Horse.Mule', 'All_life.Animal.Mammal.Donkey.Mule']
->> All_life.Search(All_life.FindKey('Mule'))
-"Definiton of Mule"
-
-
+Builder() is a "class factory" that creates classes
 """
 
+class BaseMeta(object):
+    def _check(self, attr, value):
+        if attr in self.defaults:
+            if not isinstance(value, self.defaults[attr]):
+                raise TypeError('%s cannot be %s' % (attr, type(value)))
+        else:
+            self.defaults[attr] = type(value)
+    def __setattr__(self, attr, value):
+        self._check(attr, value)
+        super(BaseMeta, self).__setattr__(attr, value)
+
+class Meta(type):
+    def __new__(meta, name, bases, dict):
+        cls = type.__new__(meta, name, (BaseMeta,) + bases, dict)
+        cls.defaults = {name: type(value) for name, value in dict.items()}
+        return cls
+
+class BaseModel(object):
+    __metaclass__ = Meta
+    # Shared Model methods.
+    pass
 
 
-
-class Builder(object):
-  """Base class for Builder objects."""
-  build_identifer = 'build_'
-  root = constants.ROOT_PATH
-  # def _Discover(self):
-  #   pass
-
-  def __init__(self):
-    self._dict = collections.defaultdict(list)
-    self.name = self.__class__.__name__
-    # self.parent_loc = where am I being initialized?
-    self.ignore_paths = []  # local paths/branches to ignore during Discovery.
-
-  # def build(self):
-  #   """Initiates object build."""
-  #   pass
+class ModelDef(object):
+    height = int
+    width = int
+    path = str
+    size = float
 
 
+class MyModel(BaseModel):
+  _DEFINITION = ModelDef()
+
+  def __init__(self, **kwargs):
+    for k,v in kwargs:
+      self[k] = v
 

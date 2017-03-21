@@ -4,10 +4,10 @@ import enum
 import logging
 
 from errors import err_msg
-from utils import constants
-from utils import datetime_util
-from utils import file_util
-from utils import user_util
+from core_utils import constants
+from core_utils import datetime_util
+from core_utils import file_util
+from core_utils import user_util
 
 
 class LogTypes(enum.Enum):
@@ -22,10 +22,16 @@ _DEFAULT_LOG_LEVEL = LogTypes.INFO
 
 class Log(logging.getLoggerClass()):
 
-  _FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-  _DATA_PATH = constants.DATA_PATH + '/logs'
+  _FORMAT = '%(asctime)s - %(name)s - %(user)s - %(clientip)s - %(levelname)s - %(message)s'
+  _DATA_PATH = constants.LOG_PATH
 
   def __init__(self, user=None):
+    self._ready = False
+    self._initLogs(user)
+    self._initDataConnection()
+    self._initLogHandlers()
+
+  def _initLogs(self, user):
     # Initialize User and Log names.
     if user and user.lower() == 'system':
       self.user, self.client_ip = 'SYSTEM', '0.0.0.0'
@@ -35,18 +41,21 @@ class Log(logging.getLoggerClass()):
       self._issystem, self._logname = False, 'USERLOG'
     self.extra = {'user': self.user, 'clientip': self.client_ip}
 
-    # Establish Logging Repo (self.log_file : utils.file_utils.File object).
+    # Establish Logging Repo (self.log_file : core_utils.file_utils.File object).
     self.log_file = self._initDataConnection()
-    filename = '{0}/{1}'.format(self.log_file.path, self.log_file.file)
     if self.log_file.path_exists and not self.log_file.file_exists:
       self.log_file.Append(err_msg.LOG_START.format(datetime_util.now(),
                                                     datetime_util.now(True)))
 
+  def _initLogHandlers(self):
+
+    filename = '{0}/{1}'.format(self.log_file.path, self.log_file.file)
     # Establish named log with File and Stream Handlers.
     self.logger = logging.getLogger(self._logname)
     self.logger.setLevel(logging.DEBUG)
     fh, sh = logging.FileHandler(filename), logging.StreamHandler()
     fh.setLevel(logging.DEBUG), sh.setLevel(logging.ERROR)
+
 
     # Format Handlers and add to logger.
     format = logging.Formatter(self._FORMAT)
@@ -54,8 +63,23 @@ class Log(logging.getLoggerClass()):
     sh.setFormatter(format)
     self.logger.addHandler(fh)
     self.logger.addHandler(sh)
+    self.ready = True
+    if self._issystem:
+      self.logger.info('{} Logging operations initialized'.format(self._logname), extra=self.extra)
+    else:
+      SYSLOG.logger.info('{} Logging operations initialized'.format(self._logname), extra=self.extra)
 
 
+  def _closeHandlers(self):
+    if self._issystem:
+      self.logger.info('Shutting down {} Log handlers.'.format(self._logname), extra=self.extra)
+    else:
+      SYSLOG.logger.info('Shutting down {} Log handlers.'.format(self._logname), extra=self.extra)
+
+    for handle in self.logger.handlers:
+      handle.close()
+      self.logger.removeHandler(handle)
+    self.ready = False
 
   def _initDataConnection(self):
     """Creates Path for Log Files.
@@ -70,6 +94,7 @@ class Log(logging.getLoggerClass()):
     log_path = '/{0}/{1}/{2}'.format(date_dict['yr'], date_dict['mo'], date_dict['dy'])
 
     log_file = '{0}.log'.format(date_dict['hr'])
+    self.log_hour = date_dict['hr']
     file_obj = file_util.File(data_path+log_path, log_file)
     file_obj.enableAllPermissions()
     if not file_obj.path_exists:
@@ -104,7 +129,7 @@ class Log(logging.getLoggerClass()):
 
   def _validMsgArgs(self, msg, *args):
     """Ensure msg contains same # of placeholders as len(args)."""
-    return msg.count('{}') <= len(args)
+    return msg.count('{}') <= len(args) and msg
 
   def _getLogLevelMethod(self, lvl):
     """Retrieve logging action based on input.
@@ -120,7 +145,16 @@ class Log(logging.getLoggerClass()):
 
     return None
 
-  def write(self, msg, *args, **kwargs):
+  def write(self, msg=None, *args, **kwargs):
+    if datetime_util.now(True).hour != self.log_hour:
+      self.ready = False
+      self._closeHandlers()
+
+    if not self.ready:
+      self._initLogs(self.user)
+      self._initDataConnection()
+      self._initLogHandlers()
+
     lvl = None
     for key in ['level', 'lvl', 'logtype', 'log_type']:
       if key in [x.lower() for x in kwargs.keys()]:
@@ -130,10 +164,10 @@ class Log(logging.getLoggerClass()):
     write_func = self._getLogLevelMethod(lvl)
     if self._validMsgArgs(msg, *args) and write_func:
       msg = msg.format(*args) if args else msg
-      write_func(msg, kwargs)
+      write_func(msg, **kwargs)
     else:
       msg = err_msg.LOG_MSG_MISMATCH.format(msg, msg.count('{}'), args, kwargs)
       self.logger.debug(msg, extra=self.extra)
 
-
+SYSLOG = Log('system')
 

@@ -1,6 +1,6 @@
 import os, sys
 
-from utils import constants
+from core_utils import constants
 from errors import err_msg
 
 class File(object):
@@ -9,7 +9,7 @@ class File(object):
   def __init__(self, path, filename):
     self.path_exists = False
     self.file_exists = False
-    self.path = constants.ROOT_PATH + '/' + path
+    self.path = constants.ROOT_PATH + '/' + self._convertPathToLocal(path)
     self.file = filename
     self._permissions = {
       'append': False,
@@ -37,6 +37,16 @@ class File(object):
         return open(path, 'rb')
     elif self._create and self._permissions['create']:
       return open(path, 'w+b')
+
+  def _detectROOT(self, path):
+    """Detects if path input is absolute."""
+    return constants.ROOT_PATH in path
+
+  def _convertPathToLocal(self, path):
+    """Receives a Path and if absolute, convert to Local"""
+    if self._detectROOT(path):
+      return path.replace(constants.ROOT_PATH, '')
+    return path
 
   def enableAllPermissions(self, set_value=True):
     for k, v in self._permissions.iteritems():
