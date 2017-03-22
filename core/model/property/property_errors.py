@@ -1,9 +1,8 @@
 """Property-specific errors."""
+import sys
 
 from core import core_error as errors
-
-__all__ = ['KindError', 'InvalidPropertyError', 'UnprojectedPropertyError',
-           'ReadonlyPropertyError', 'ComputedPropertyError']
+from core import core_utils
 
 
 class KindError(errors.BadValueError):
@@ -35,3 +34,5 @@ class ReadonlyPropertyError(errors.Error):
 class ComputedPropertyError(ReadonlyPropertyError):
   """Raised when attempting to set a value to or delete a computed property."""
 
+
+__all__ = core_utils.build_mod_all_list(sys.modules[__name__])

@@ -214,24 +214,23 @@ def decorator(wrapped_decorator):
   helper.wrapped_decorator = wrapped_decorator
   return helper
 
-def build_all(module):
-  def valid_content(name):
-    if (name[0] == name[0].upper() or
-          isinstance(getattr(module, name), types.FunctionType)):
-      return True
-    return False
-  all = []
-  if isinstance(module, types.ModuleType):
-    contents = [x for x in dir(module) if not x.startswith('_')]
-    for item in contents:
-      if valid_content(item):
-        all.append(item)
-  return all
-  # for _name, _object in globals().items():
-  #   if ((_name.endswith('property') and issubclass(_object, Property)) or
-  #         (_name.endswith('Error') and issubclass(_object, Exception))):
-  #     __all__.append(_name)
 
+def build_mod_all_list(mod):
+  if isinstance(mod, types.ModuleType):
+    all = []
+    for item in dir(mod):
+      if isinstance(getattr(mod, item), (types.FunctionType, types.TypeType)):
+        all.append(item)
+    return all
+  return None
+
+def typename(obj):
+  """Returns the type of obj as a string. More descriptive and specific than
+  type(obj), and safe for any object, unlike __class__."""
+  if hasattr(obj, '__class__'):
+    return getattr(obj, '__class__').__name__
+  else:
+    return type(obj).__name__
 
 """ TEMP COMMENTED -- NOT NEEDED RIGHT AWAY ---"""
 # import cgi

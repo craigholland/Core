@@ -284,50 +284,42 @@ Property subclass is in the docstring for the Property class.
 """
 
 import core.core_utils as utils
-from core.model import core_model_utils as mutils
-from core.model.property.base_property import Property
-from core.model.property.base_property import _validate_key
-from core.model.property import properties
+from core.model.core_model_utils import *
+from core.model.property.base_property import *
+from core.model.core_model_utils import *
+from core.core_error import *
+#
+# from .google_imports import datastore_errors
+# from .google_imports import datastore_types
+# from .google_imports import entity_pb
 
-from core.model.property import property_errors
-
-from core import key as key_module  # NOTE: 'key' is a common local variable name.
-
-errors = property_errors.errors
-
-_NestedCounter = mutils._NestedCounter
-_NotEqualMixin = mutils._NotEqualMixin
-ModelAttribute = mutils.ModelAttribute
-_BaseValue = mutils._BaseValue
+from core.model import core_key as key_module  # NOTE: 'key' is a common local variable name.
 
 Key = key_module.Key  # For export.
 
-"""TEMP REMOVE
-BlobKey = datastore_types.BlobKey
-GeoPt = datastore_types.GeoPt
-
-Rollback = errors.Rollback
-
-
-
-# Various imported limits.
-_MAX_LONG = key_module._MAX_LONG
-_MAX_STRING_LENGTH = datastore_types._MAX_STRING_LENGTH
-
-# Map index directions to human-readable strings.
-_DIR_MAP = {
-    entity_pb.Index_Property.ASCENDING: 'asc',
-    entity_pb.Index_Property.DESCENDING: 'desc',
-}
-
-# Map index states to human-readable strings.
-_STATE_MAP = {
-    entity_pb.CompositeIndex.ERROR: 'error',
-    entity_pb.CompositeIndex.DELETED: 'deleting',
-    entity_pb.CompositeIndex.READ_WRITE: 'serving',
-    entity_pb.CompositeIndex.WRITE_ONLY: 'building',
-}
-"""
+#
+# BlobKey = datastore_types.BlobKey
+# GeoPt = datastore_types.GeoPt
+#
+#
+# # Various imported limits.
+# _MAX_LONG = key_module._MAX_LONG
+# _MAX_STRING_LENGTH = datastore_types._MAX_STRING_LENGTH
+#
+# # Map index directions to human-readable strings.
+# _DIR_MAP = {
+#     entity_pb.Index_Property.ASCENDING: 'asc',
+#     entity_pb.Index_Property.DESCENDING: 'desc',
+# }
+#
+# # Map index states to human-readable strings.
+# _STATE_MAP = {
+#     entity_pb.CompositeIndex.ERROR: 'error',
+#     entity_pb.CompositeIndex.DELETED: 'deleting',
+#     entity_pb.CompositeIndex.READ_WRITE: 'serving',
+#     entity_pb.CompositeIndex.WRITE_ONLY: 'building',
+# }
+#
 
 
 
@@ -527,7 +519,7 @@ class Model(_NotEqualMixin):
   _projection = ()  # Tuple of names of projected properties.
 
   # Hardcoded pseudo-property for the key.
-  _key = properties.ModelKey()
+  _key = ModelKey()
   key = _key
 
   def __init__(*args, **kwds):
@@ -567,7 +559,7 @@ class Model(_NotEqualMixin):
     if key is not None:
       if (id is not None or parent is not None or
           app is not None or namespace is not None):
-        raise errors.BadArgumentError(
+        raise BadArgumentError(
             'Model constructor given key= does not accept '
             'id=, app=, namespace=, or parent=.')
       self._key = _validate_key(key, entity=self)
@@ -589,7 +581,7 @@ class Model(_NotEqualMixin):
       return kwds.pop(alt_kwd)
     if kwd in kwds:
       obj = getattr(cls, kwd, None)
-      if not isinstance(obj, Property) or isinstance(obj,  properties.ModelKey):
+      if not isinstance(obj, Property) or isinstance(obj, ModelKey):
         return kwds.pop(kwd)
     return None
 
@@ -642,7 +634,7 @@ class Model(_NotEqualMixin):
     """
     baddies = self._find_uninitialized()
     if baddies:
-      raise errors.BadValueError(
+      raise datastore_errors.BadValueError(
           'Entity has uninitialized properties: %s' % ', '.join(baddies))
 
   def __repr__(self):
@@ -728,7 +720,7 @@ class Model(_NotEqualMixin):
     """
     modelclass = cls._kind_map.get(kind, default_model)
     if modelclass is None:
-      raise property_errors.KindError(
+      raise KindError(
           "No model class found for kind '%s'. Did you forget to import it?" %
           kind)
     return modelclass
@@ -894,14 +886,14 @@ class Model(_NotEqualMixin):
     """Internal helper to create a fake property."""
     self._clone_properties()
     if p.name() != next and not p.name().endswith('.' + next):
-      prop = properties.StructuredProperty(Expando, next)
+      prop = StructuredProperty(Expando, next)
       prop._store_value(self, _BaseValue(Expando()))
     else:
       compressed = p.meaning_uri() == _MEANING_URI_COMPRESSED
-      prop = properties.GenericProperty(next,
-                                        repeated=p.multiple(),
-                                        indexed=indexed,
-                                        compressed=compressed)
+      prop = GenericProperty(next,
+                             repeated=p.multiple(),
+                             indexed=indexed,
+                             compressed=compressed)
     prop._code_name = next
     self._properties[prop._name] = prop
     return prop
@@ -930,7 +922,7 @@ class Model(_NotEqualMixin):
         continue
       try:
         values[name] = prop._get_for_dict(self)
-      except property_errors.UnprojectedPropertyError:
+      except UnprojectedPropertyError:
         pass  # Ignore unprojected properties rather than failing.
     return values
   to_dict = _to_dict
@@ -945,21 +937,21 @@ class Model(_NotEqualMixin):
     # Verify that _get_kind() returns an 8-bit string.
     kind = cls._get_kind()
     if not isinstance(kind, basestring):
-      raise property_errors.KindError('Class %s defines a _get_kind() method that returns '
-                                      'a non-string (%r)' % (cls.__name__, kind))
+      raise KindError('Class %s defines a _get_kind() method that returns '
+                      'a non-string (%r)' % (cls.__name__, kind))
     if not isinstance(kind, str):
       try:
         kind = kind.encode('ascii')  # ASCII contents is okay.
       except UnicodeEncodeError:
-        raise property_errors.KindError('Class %s defines a _get_kind() method that returns '
-                                        'a Unicode string (%r); please encode using utf-8' %
-                                        (cls.__name__, kind))
+        raise KindError('Class %s defines a _get_kind() method that returns '
+                        'a Unicode string (%r); please encode using utf-8' %
+                        (cls.__name__, kind))
     cls._properties = {}  # Map of {name: property}
     if cls.__module__ == __name__:  # Skip the classes in *this* file.
       return
     for name in set(dir(cls)):
       attr = getattr(cls, name, None)
-      if isinstance(attr, ModelAttribute) and not isinstance(attr,  properties.ModelKey):
+      if isinstance(attr, ModelAttribute) and not isinstance(attr, ModelKey):
         if name.startswith('_'):
           raise TypeError('ModelAttribute %s cannot begin with an underscore '
                           'character. _ prefixed attributes are reserved for '
@@ -967,7 +959,7 @@ class Model(_NotEqualMixin):
         attr._fix_up(cls, name)
         if isinstance(attr, Property):
           if (attr._repeated or
-              (isinstance(attr, properties.StructuredProperty) and
+              (isinstance(attr, StructuredProperty) and
                attr._modelclass._has_repeated)):
             cls._has_repeated = True
           cls._properties[attr._name] = attr
@@ -1022,7 +1014,7 @@ class Model(_NotEqualMixin):
     Raises:
       InvalidPropertyError.
     """
-    raise property_errors.InvalidPropertyError('Unknown property %s' % name)
+    raise InvalidPropertyError('Unknown property %s' % name)
 
   def _validate_key(self, key):
     """Validation for _key attribute (designed to be overridden).
@@ -1038,189 +1030,188 @@ class Model(_NotEqualMixin):
   # Datastore API using the default context.
   # These use local import since otherwise they'd be recursive imports.
 
-  # TEMP-REMOVED: until Query is imported
-  # @classmethod
-  # def _query(cls, *args, **kwds):
-  #   """Create a Query object for this class.
-  #
-  #   Args:
-  #     distinct: Optional bool, short hand for group_by = projection.
-  #     *args: Used to apply an initial filter
-  #     **kwds: are passed to the Query() constructor.
-  #
-  #   Returns:
-  #     A Query object.
-  #   """
-  #   # Validating distinct.
-  #   if 'distinct' in kwds:
-  #     if 'group_by' in kwds:
-  #       raise TypeError(
-  #           'cannot use distinct= and group_by= at the same time')
-  #     projection = kwds.get('projection')
-  #     if not projection:
-  #       raise TypeError(
-  #           'cannot use distinct= without projection=')
-  #     if kwds.pop('distinct'):
-  #       kwds['group_by'] = projection
-  #
-  #   # TODO: Disallow non-empty args and filter=.
-  #   from .query import Query  # Import late to avoid circular imports.
-  #   qry = Query(kind=cls._get_kind(), **kwds)
-  #   qry = qry.filter(*cls._default_filters())
-  #   qry = qry.filter(*args)
-  #   return qry
-  # query = _query
-  # TEMP-REMOVE: Need to import tasklets and query
-  # @classmethod
-  # def _gql(cls, query_string, *args, **kwds):
-  #   """Run a GQL query."""
-  #   from .query import gql  # Import late to avoid circular imports.
-  #   return gql('SELECT * FROM %s %s' % (cls._class_name(), query_string),
-  #              *args, **kwds)
-  # gql = _gql
-  #
-  # def _put(self, **ctx_options):
-  #   """Write this entity to Cloud Datastore.
-  #
-  #   If the operation creates or completes a key, the entity's key
-  #   attribute is set to the new, complete key.
-  #
-  #   Returns:
-  #     The key for the entity.  This is always a complete key.
-  #   """
-  #   return self._put_async(**ctx_options).get_result()
-  # put = _put
-  #
-  # def _put_async(self, **ctx_options):
-  #   """Write this entity to Cloud Datastore.
-  #
-  #   This is the asynchronous version of Model._put().
-  #   """
-  #   if self._projection:
-  #     raise errors.BadRequestError('Cannot put a partial entity')
-  #   from . import tasklets
-  #   ctx = tasklets.get_context()
-  #   self._prepare_for_put()
-  #   if self._key is None:
-  #     self._key = Key(self._get_kind(), None)
-  #   self._pre_put_hook()
-  #   fut = ctx.put(self, **ctx_options)
-  #   post_hook = self._post_put_hook
-  #   if not self._is_default_hook(Model._default_post_put_hook, post_hook):
-  #     fut.add_immediate_callback(post_hook, fut)
-  #   return fut
-  # put_async = _put_async
-  #
-  # @classmethod
-  # def _get_or_insert(*args, **kwds):
-  #   """Transactionally retrieves an existing entity or creates a new one.
-  #
-  #   Positional Args:
-  #     name: Key name to retrieve or create.
-  #
-  #   Keyword Args:
-  #     namespace: Optional namespace.
-  #     app: Optional app ID.
-  #     parent: Parent entity key, if any.
-  #     context_options: ContextOptions object (not keyword args!) or None.
-  #     **kwds: Keyword arguments to pass to the constructor of the model class
-  #       if an instance for the specified key name does not already exist. If
-  #       an instance with the supplied key_name and parent already exists,
-  #       these arguments will be discarded.
-  #
-  #   Returns:
-  #     Existing instance of Model class with the specified key name and parent
-  #     or a new one that has just been created.
-  #   """
-  #   cls, args = args[0], args[1:]
-  #   return cls._get_or_insert_async(*args, **kwds).get_result()
-  # get_or_insert = _get_or_insert
-  #
-  # @classmethod
-  # def _get_or_insert_async(*args, **kwds):
-  #   """Transactionally retrieves an existing entity or creates a new one.
-  #
-  #   This is the asynchronous version of Model._get_or_insert().
-  #   """
-  #   # NOTE: The signature is really weird here because we want to support
-  #   # models with properties named e.g. 'cls' or 'name'.
-  #   from . import tasklets
-  #   cls, name = args  # These must always be positional.
-  #   get_arg = cls.__get_arg
-  #   app = get_arg(kwds, 'app')
-  #   namespace = get_arg(kwds, 'namespace')
-  #   parent = get_arg(kwds, 'parent')
-  #   context_options = get_arg(kwds, 'context_options')
-  #   # (End of super-special argument parsing.)
-  #   # TODO: Test the heck out of this, in all sorts of evil scenarios.
-  #   if not isinstance(name, basestring):
-  #     raise TypeError('name must be a string; received %r' % name)
-  #   elif not name:
-  #     raise ValueError('name cannot be an empty string.')
-  #   key = Key(cls, name, app=app, namespace=namespace, parent=parent)
-  #
-  #   @tasklets.tasklet
-  #   def internal_tasklet():
-  #     @tasklets.tasklet
-  #     def txn():
-  #       ent = yield key.get_async(options=context_options)
-  #       if ent is None:
-  #         ent = cls(**kwds)  # TODO: Use _populate().
-  #         ent._key = key
-  #         yield ent.put_async(options=context_options)
-  #       raise tasklets.Return(ent)
-  #     if in_transaction():
-  #       # Run txn() in existing transaction.
-  #       ent = yield txn()
-  #     else:
-  #       # Maybe avoid a transaction altogether.
-  #       ent = yield key.get_async(options=context_options)
-  #       if ent is None:
-  #         # Run txn() in new transaction.
-  #         ent = yield transaction_async(txn)
-  #     raise tasklets.Return(ent)
-  #
-  #   return internal_tasklet()
-  #
-  # get_or_insert_async = _get_or_insert_async
-  #
-  # @classmethod
-  # def _allocate_ids(cls, size=None, max=None, parent=None, **ctx_options):
-  #   """Allocates a range of key IDs for this model class.
-  #
-  #   Args:
-  #     size: Number of IDs to allocate. Either size or max can be specified,
-  #       not both.
-  #     max: Maximum ID to allocate. Either size or max can be specified,
-  #       not both.
-  #     parent: Parent key for which the IDs will be allocated.
-  #     **ctx_options: Context options.
-  #
-  #   Returns:
-  #     A tuple with (start, end) for the allocated range, inclusive.
-  #   """
-  #   return cls._allocate_ids_async(size=size, max=max, parent=parent,
-  #                                  **ctx_options).get_result()
-  # allocate_ids = _allocate_ids
-  #
-  # @classmethod
-  # def _allocate_ids_async(cls, size=None, max=None, parent=None,
-  #                         **ctx_options):
-  #   """Allocates a range of key IDs for this model class.
-  #
-  #   This is the asynchronous version of Model._allocate_ids().
-  #   """
-  #   from . import tasklets
-  #   ctx = tasklets.get_context()
-  #   cls._pre_allocate_ids_hook(size, max, parent)
-  #   key = Key(cls._get_kind(), None, parent=parent)
-  #   fut = ctx.allocate_ids(key, size=size, max=max, **ctx_options)
-  #   post_hook = cls._post_allocate_ids_hook
-  #   if not cls._is_default_hook(Model._default_post_allocate_ids_hook,
-  #                               post_hook):
-  #     fut.add_immediate_callback(post_hook, size, max, parent, fut)
-  #   return fut
-  # allocate_ids_async = _allocate_ids_async
+  @classmethod
+  def _query(cls, *args, **kwds):
+    """Create a Query object for this class.
+
+    Args:
+      distinct: Optional bool, short hand for group_by = projection.
+      *args: Used to apply an initial filter
+      **kwds: are passed to the Query() constructor.
+
+    Returns:
+      A Query object.
+    """
+    # Validating distinct.
+    if 'distinct' in kwds:
+      if 'group_by' in kwds:
+        raise TypeError(
+            'cannot use distinct= and group_by= at the same time')
+      projection = kwds.get('projection')
+      if not projection:
+        raise TypeError(
+            'cannot use distinct= without projection=')
+      if kwds.pop('distinct'):
+        kwds['group_by'] = projection
+
+    # TODO: Disallow non-empty args and filter=.
+    from .query import Query  # Import late to avoid circular imports.
+    qry = Query(kind=cls._get_kind(), **kwds)
+    qry = qry.filter(*cls._default_filters())
+    qry = qry.filter(*args)
+    return qry
+  query = _query
+
+  @classmethod
+  def _gql(cls, query_string, *args, **kwds):
+    """Run a GQL query."""
+    from .query import gql  # Import late to avoid circular imports.
+    return gql('SELECT * FROM %s %s' % (cls._class_name(), query_string),
+               *args, **kwds)
+  gql = _gql
+
+  def _put(self, **ctx_options):
+    """Write this entity to Cloud Datastore.
+
+    If the operation creates or completes a key, the entity's key
+    attribute is set to the new, complete key.
+
+    Returns:
+      The key for the entity.  This is always a complete key.
+    """
+    return self._put_async(**ctx_options).get_result()
+  put = _put
+
+  def _put_async(self, **ctx_options):
+    """Write this entity to Cloud Datastore.
+
+    This is the asynchronous version of Model._put().
+    """
+    if self._projection:
+      raise datastore_errors.BadRequestError('Cannot put a partial entity')
+    from . import tasklets
+    ctx = tasklets.get_context()
+    self._prepare_for_put()
+    if self._key is None:
+      self._key = Key(self._get_kind(), None)
+    self._pre_put_hook()
+    fut = ctx.put(self, **ctx_options)
+    post_hook = self._post_put_hook
+    if not self._is_default_hook(Model._default_post_put_hook, post_hook):
+      fut.add_immediate_callback(post_hook, fut)
+    return fut
+  put_async = _put_async
+
+  @classmethod
+  def _get_or_insert(*args, **kwds):
+    """Transactionally retrieves an existing entity or creates a new one.
+
+    Positional Args:
+      name: Key name to retrieve or create.
+
+    Keyword Args:
+      namespace: Optional namespace.
+      app: Optional app ID.
+      parent: Parent entity key, if any.
+      context_options: ContextOptions object (not keyword args!) or None.
+      **kwds: Keyword arguments to pass to the constructor of the model class
+        if an instance for the specified key name does not already exist. If
+        an instance with the supplied key_name and parent already exists,
+        these arguments will be discarded.
+
+    Returns:
+      Existing instance of Model class with the specified key name and parent
+      or a new one that has just been created.
+    """
+    cls, args = args[0], args[1:]
+    return cls._get_or_insert_async(*args, **kwds).get_result()
+  get_or_insert = _get_or_insert
+
+  @classmethod
+  def _get_or_insert_async(*args, **kwds):
+    """Transactionally retrieves an existing entity or creates a new one.
+
+    This is the asynchronous version of Model._get_or_insert().
+    """
+    # NOTE: The signature is really weird here because we want to support
+    # models with properties named e.g. 'cls' or 'name'.
+    from . import tasklets
+    cls, name = args  # These must always be positional.
+    get_arg = cls.__get_arg
+    app = get_arg(kwds, 'app')
+    namespace = get_arg(kwds, 'namespace')
+    parent = get_arg(kwds, 'parent')
+    context_options = get_arg(kwds, 'context_options')
+    # (End of super-special argument parsing.)
+    # TODO: Test the heck out of this, in all sorts of evil scenarios.
+    if not isinstance(name, basestring):
+      raise TypeError('name must be a string; received %r' % name)
+    elif not name:
+      raise ValueError('name cannot be an empty string.')
+    key = Key(cls, name, app=app, namespace=namespace, parent=parent)
+
+    @tasklets.tasklet
+    def internal_tasklet():
+      @tasklets.tasklet
+      def txn():
+        ent = yield key.get_async(options=context_options)
+        if ent is None:
+          ent = cls(**kwds)  # TODO: Use _populate().
+          ent._key = key
+          yield ent.put_async(options=context_options)
+        raise tasklets.Return(ent)
+      if in_transaction():
+        # Run txn() in existing transaction.
+        ent = yield txn()
+      else:
+        # Maybe avoid a transaction altogether.
+        ent = yield key.get_async(options=context_options)
+        if ent is None:
+          # Run txn() in new transaction.
+          ent = yield transaction_async(txn)
+      raise tasklets.Return(ent)
+
+    return internal_tasklet()
+
+  get_or_insert_async = _get_or_insert_async
+
+  @classmethod
+  def _allocate_ids(cls, size=None, max=None, parent=None, **ctx_options):
+    """Allocates a range of key IDs for this model class.
+
+    Args:
+      size: Number of IDs to allocate. Either size or max can be specified,
+        not both.
+      max: Maximum ID to allocate. Either size or max can be specified,
+        not both.
+      parent: Parent key for which the IDs will be allocated.
+      **ctx_options: Context options.
+
+    Returns:
+      A tuple with (start, end) for the allocated range, inclusive.
+    """
+    return cls._allocate_ids_async(size=size, max=max, parent=parent,
+                                   **ctx_options).get_result()
+  allocate_ids = _allocate_ids
+
+  @classmethod
+  def _allocate_ids_async(cls, size=None, max=None, parent=None,
+                          **ctx_options):
+    """Allocates a range of key IDs for this model class.
+
+    This is the asynchronous version of Model._allocate_ids().
+    """
+    from . import tasklets
+    ctx = tasklets.get_context()
+    cls._pre_allocate_ids_hook(size, max, parent)
+    key = Key(cls._get_kind(), None, parent=parent)
+    fut = ctx.allocate_ids(key, size=size, max=max, **ctx_options)
+    post_hook = cls._post_allocate_ids_hook
+    if not cls._is_default_hook(Model._default_post_allocate_ids_hook,
+                                post_hook):
+      fut.add_immediate_callback(post_hook, size, max, parent, fut)
+    return fut
+  allocate_ids_async = _allocate_ids_async
 
   @classmethod
   @utils.positional(3)
@@ -1361,12 +1352,12 @@ class Expando(Model):
     # TODO: Refactor this to share code with _fake_property().
     self._clone_properties()
     if isinstance(value, Model):
-      prop = properties.StructuredProperty(Model, name)
+      prop = StructuredProperty(Model, name)
     elif isinstance(value, dict):
-      prop = properties.StructuredProperty(Expando, name)
+      prop = StructuredProperty(Expando, name)
     else:
       # TODO: What if it's a list of Model instances?
-      prop = properties.GenericProperty(
+      prop = GenericProperty(
           name, repeated=isinstance(value, list),
           indexed=self._default_indexed,
           write_empty_list=self._write_empty_list_for_dynamic_properties)
@@ -1388,5 +1379,15 @@ class Expando(Model):
                          'base class.' % name)
     del self._properties[name]
 
+def _validate_key(value, entity=None):
+  if not isinstance(value, Key):
+    # TODO: BadKeyError.
+    raise BadValueError('Expected Key, got %r' % value)
+  if entity and entity.__class__ not in (Model, Expando):
+    if value.kind() != entity._get_kind():
+      raise KindError('Expected Key kind to be %s; received %s' %
+                      (entity._get_kind(), value.kind()))
+  return value
 
-
+# Update __all__ to contain all property and Exception subclasses.
+__all__ = utils.build_mod_all_list(sys.modules[__name__])
