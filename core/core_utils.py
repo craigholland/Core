@@ -7,6 +7,7 @@ import functools
 import inspect
 import os
 import sys
+import types
 import logging
 import threading
 
@@ -213,8 +214,23 @@ def decorator(wrapped_decorator):
   helper.wrapped_decorator = wrapped_decorator
   return helper
 
-
-
+def build_all(module):
+  def valid_content(name):
+    if (name[0] == name[0].upper() or
+          isinstance(getattr(module, name), types.FunctionType)):
+      return True
+    return False
+  all = []
+  if isinstance(module, types.ModuleType):
+    contents = [x for x in dir(module) if not x.startswith('_')]
+    for item in contents:
+      if valid_content(item):
+        all.append(item)
+  return all
+  # for _name, _object in globals().items():
+  #   if ((_name.endswith('property') and issubclass(_object, Property)) or
+  #         (_name.endswith('Error') and issubclass(_object, Exception))):
+  #     __all__.append(_name)
 
 
 """ TEMP COMMENTED -- NOT NEEDED RIGHT AWAY ---"""
