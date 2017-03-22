@@ -1,5 +1,7 @@
-from core.model.core_model_utils import _NestedCounter
-from core.model.core_model_utils import _NotEqualMixin
+from core.model.core_model_utils import *
+from core import core_utils as utils
+from core.core_error import *
+from core.model.property.property_errors import *
 
 class Property(ModelAttribute):
   """A class describing a typed, persisted attribute of a Cloud Datastore entity.
@@ -39,7 +41,7 @@ class Property(ModelAttribute):
   call _store_value().
 
   A property subclass that wants to implement a specific
-  transformation between user values and serialiazble values should
+  transformation between user values and serializable values should
   implement two methods, _to_base_type() and _from_base_type().
   These should *NOT* call their super() method; super calls are taken
   care of by _call_to_base_type() and _call_from_base_type().
@@ -218,7 +220,7 @@ class Property(ModelAttribute):
     """
     # NOTE: This is also used by query.gql().
     if not self._indexed:
-      raise datastore_errors.BadFilterError(
+      raise BadFilterError(
           'Cannot query for unindexed property %s' % self._name)
     from .query import FilterNode  # Import late to avoid circular imports.
     if value is not None:
@@ -256,56 +258,57 @@ class Property(ModelAttribute):
     """Return a FilterNode instance representing the '>=' comparison."""
     return self._comparison('>=', value)
 
-  # pylint: disable=invalid-name
-  def _IN(self, value):
-    """Comparison operator for the 'in' comparison operator.
-
-    The Python 'in' operator cannot be overloaded in the way we want
-    to, so we define a method.  For example::
-
-      Employee.query(Employee.rank.IN([4, 5, 6]))
-
-    Note that the method is called ._IN() but may normally be invoked
-    as .IN(); ._IN() is provided for the case you have a
-    StructuredProperty with a model that has a property named IN.
-    """
-    if not self._indexed:
-      raise datastore_errors.BadFilterError(
-          'Cannot query for unindexed property %s' % self._name)
-    from .query import FilterNode  # Import late to avoid circular imports.
-    if not isinstance(value, (list, tuple, set, frozenset)):
-      raise datastore_errors.BadArgumentError(
-          'Expected list, tuple or set, got %r' % (value,))
-    values = []
-    for val in value:
-      if val is not None:
-        val = self._do_validate(val)
-        val = self._call_to_base_type(val)
-        val = self._datastore_type(val)
-      values.append(val)
-    return FilterNode(self._name, 'in', values)
-  IN = _IN
-
-  def __neg__(self):
-    """Return a descending sort order on this property.
-
-    For example::
-
-      Employee.query().order(-Employee.rank)
-    """
-    return datastore_query.PropertyOrder(
-        self._name, datastore_query.PropertyOrder.DESCENDING)
-
-  def __pos__(self):
-    """Return an ascending sort order on this property.
-
-    Note that this is redundant but provided for consistency with
-    __neg__.  For example, the following two are equivalent::
-
-      Employee.query().order(+Employee.rank)
-      Employee.query().order(Employee.rank)
-    """
-    return datastore_query.PropertyOrder(self._name)
+# TEMP-REMOVE
+#   # pylint: disable=invalid-name
+#   def _IN(self, value):
+#     """Comparison operator for the 'in' comparison operator.
+#
+#     The Python 'in' operator cannot be overloaded in the way we want
+#     to, so we define a method.  For example::
+#
+#       Employee.query(Employee.rank.IN([4, 5, 6]))
+#
+#     Note that the method is called ._IN() but may normally be invoked
+#     as .IN(); ._IN() is provided for the case you have a
+#     StructuredProperty with a model that has a property named IN.
+#     """
+#     if not self._indexed:
+#       raise BadFilterError(
+#           'Cannot query for unindexed property %s' % self._name)
+#     from .query import FilterNode  # Import late to avoid circular imports.
+#     if not isinstance(value, (list, tuple, set, frozenset)):
+#       raise BadArgumentError(
+#           'Expected list, tuple or set, got %r' % (value,))
+#     values = []
+#     for val in value:
+#       if val is not None:
+#         val = self._do_validate(val)
+#         val = self._call_to_base_type(val)
+#         val = self._datastore_type(val)
+#       values.append(val)
+#     return FilterNode(self._name, 'in', values)
+#   IN = _IN
+#
+#   def __neg__(self):
+#     """Return a descending sort order on this property.
+#
+#     For example::
+#
+#       Employee.query().order(-Employee.rank)
+#     """
+#     return datastore_query.PropertyOrder(
+#         self._name, datastore_query.PropertyOrder.DESCENDING)
+#
+#   def __pos__(self):
+#     """Return an ascending sort order on this property.
+#
+#     Note that this is redundant but provided for consistency with
+#     __neg__.  For example, the following two are equivalent::
+#
+#       Employee.query().order(+Employee.rank)
+#       Employee.query().order(Employee.rank)
+#     """
+#     return datastore_query.PropertyOrder(self._name)
 
   def _do_validate(self, value):
     """Call all validations on the value.
@@ -334,7 +337,7 @@ class Property(ModelAttribute):
         value = newvalue
     if self._choices is not None:
       if value not in self._choices:
-        raise datastore_errors.BadValueError(
+        raise BadValueError(
             'Value %r for property %s is not an allowed choice' %
             (value, self._name))
     return value
@@ -375,7 +378,7 @@ class Property(ModelAttribute):
           'You cannot set property values of a projection entity')
     if self._repeated:
       if not isinstance(value, (list, tuple, set, frozenset)):
-        raise datastore_errors.BadValueError('Expected list or tuple, got %r' %
+        raise BadValueError('Expected list or tuple, got %r' %
                                              (value,))
       value = [self._do_validate(v) for v in value]
     else:
@@ -641,97 +644,98 @@ class Property(ModelAttribute):
     """Descriptor protocol: delete the value from the entity."""
     self._delete_value(entity)
 
-  def _serialize(self, entity, pb, prefix='', parent_repeated=False,
-                 projection=None):
-    """Internal helper to serialize this property to a protocol buffer.
-
-    Subclasses may override this method.
-
-    Args:
-      entity: The entity, a Model (subclass) instance.
-      pb: The protocol buffer, an EntityProto instance.
-      prefix: Optional name prefix used for StructuredProperty
-        (if present, must end in '.').
-      parent_repeated: True if the parent (or an earlier ancestor)
-        is a repeated property.
-      projection: A list or tuple of strings representing the projection for
-        the model instance, or None if the instance is not a projection.
-    """
-    values = self._get_base_value_unwrapped_as_list(entity)
-    name = prefix + self._name
-    if projection and name not in projection:
-      return
-
-    if self._indexed:
-      create_prop = lambda: pb.add_property()
-    else:
-      create_prop = lambda: pb.add_raw_property()
-
-    if self._repeated and not values and self._write_empty_list:
-      # We want to write the empty list
-      p = create_prop()
-      p.set_name(name)
-      p.set_multiple(False)
-      p.set_meaning(entity_pb.Property.EMPTY_LIST)
-      p.mutable_value()
-    else:
-      # We write a list, or a single property
-      for val in values:
-        p = create_prop()
-        p.set_name(name)
-        p.set_multiple(self._repeated or parent_repeated)
-        v = p.mutable_value()
-        if val is not None:
-          self._db_set_value(v, p, val)
-          if projection:
-            # Projected properties have the INDEX_VALUE meaning and only contain
-            # the original property's name and value.
-            new_p = entity_pb.Property()
-            new_p.set_name(p.name())
-            new_p.set_meaning(entity_pb.Property.INDEX_VALUE)
-            new_p.set_multiple(False)
-            new_p.mutable_value().CopyFrom(v)
-            p.CopyFrom(new_p)
-
-  def _deserialize(self, entity, p, unused_depth=1):
-    """Internal helper to deserialize this property from a protocol buffer.
-
-    Subclasses may override this method.
-
-    Args:
-      entity: The entity, a Model (subclass) instance.
-      p: A property Message object (a protocol buffer).
-      depth: Optional nesting depth, default 1 (unused here, but used
-        by some subclasses that override this method).
-    """
-    if p.meaning() == entity_pb.Property.EMPTY_LIST:
-      self._store_value(entity, [])
-      return
-
-    val = self._db_get_value(p.value(), p)
-    if val is not None:
-      val = _BaseValue(val)
-
-    # TODO: replace the remainder of the function with the following commented
-    # out code once its feasible to make breaking changes such as not calling
-    # _store_value().
-
-    # if self._repeated:
-    #   entity._values.setdefault(self._name, []).append(val)
-    # else:
-    #   entity._values[self._name] = val
-
-    if self._repeated:
-      if self._has_value(entity):
-        value = self._retrieve_value(entity)
-        assert isinstance(value, list), repr(value)
-        value.append(val)
-      else:
-        # We promote single values to lists if we are a list property
-        value = [val]
-    else:
-      value = val
-    self._store_value(entity, value)
+# TEMP-REMOVE:
+#   def _serialize(self, entity, pb, prefix='', parent_repeated=False,
+#                  projection=None):
+#     """Internal helper to serialize this property to a protocol buffer.
+#
+#     Subclasses may override this method.
+#
+#     Args:
+#       entity: The entity, a Model (subclass) instance.
+#       pb: The protocol buffer, an EntityProto instance.
+#       prefix: Optional name prefix used for StructuredProperty
+#         (if present, must end in '.').
+#       parent_repeated: True if the parent (or an earlier ancestor)
+#         is a repeated property.
+#       projection: A list or tuple of strings representing the projection for
+#         the model instance, or None if the instance is not a projection.
+#     """
+#     values = self._get_base_value_unwrapped_as_list(entity)
+#     name = prefix + self._name
+#     if projection and name not in projection:
+#       return
+#
+#     if self._indexed:
+#       create_prop = lambda: pb.add_property()
+#     else:
+#       create_prop = lambda: pb.add_raw_property()
+#
+#     if self._repeated and not values and self._write_empty_list:
+#       # We want to write the empty list
+#       p = create_prop()
+#       p.set_name(name)
+#       p.set_multiple(False)
+#       p.set_meaning(entity_pb.Property.EMPTY_LIST)
+#       p.mutable_value()
+#     else:
+#       # We write a list, or a single property
+#       for val in values:
+#         p = create_prop()
+#         p.set_name(name)
+#         p.set_multiple(self._repeated or parent_repeated)
+#         v = p.mutable_value()
+#         if val is not None:
+#           self._db_set_value(v, p, val)
+#           if projection:
+#             # Projected properties have the INDEX_VALUE meaning and only contain
+#             # the original property's name and value.
+#             new_p = entity_pb.Property()
+#             new_p.set_name(p.name())
+#             new_p.set_meaning(entity_pb.Property.INDEX_VALUE)
+#             new_p.set_multiple(False)
+#             new_p.mutable_value().CopyFrom(v)
+#             p.CopyFrom(new_p)
+#
+#   def _deserialize(self, entity, p, unused_depth=1):
+#     """Internal helper to deserialize this property from a protocol buffer.
+#
+#     Subclasses may override this method.
+#
+#     Args:
+#       entity: The entity, a Model (subclass) instance.
+#       p: A property Message object (a protocol buffer).
+#       depth: Optional nesting depth, default 1 (unused here, but used
+#         by some subclasses that override this method).
+#     """
+#     if p.meaning() == entity_pb.Property.EMPTY_LIST:
+#       self._store_value(entity, [])
+#       return
+#
+#     val = self._db_get_value(p.value(), p)
+#     if val is not None:
+#       val = _BaseValue(val)
+#
+#     # TODO: replace the remainder of the function with the following commented
+#     # out code once its feasible to make breaking changes such as not calling
+#     # _store_value().
+#
+#     # if self._repeated:
+#     #   entity._values.setdefault(self._name, []).append(val)
+#     # else:
+#     #   entity._values[self._name] = val
+#
+#     if self._repeated:
+#       if self._has_value(entity):
+#         value = self._retrieve_value(entity)
+#         assert isinstance(value, list), repr(value)
+#         value.append(val)
+#       else:
+#         # We promote single values to lists if we are a list property
+#         value = [val]
+#     else:
+#       value = val
+#     self._store_value(entity, value)
 
   def _prepare_for_put(self, entity):
     pass
@@ -776,13 +780,5 @@ class Property(ModelAttribute):
     return self._get_value(entity)
 
 
-def _validate_key(value, entity=None):
-  if not isinstance(value, Key):
-    # TODO: BadKeyError.
-    raise datastore_errors.BadValueError('Expected Key, got %r' % value)
-  if entity and entity.__class__ not in (Model, Expando):
-    if value.kind() != entity._get_kind():
-      raise KindError('Expected Key kind to be %s; received %s' %
-                      (entity._get_kind(), value.kind()))
-  return value
+
 

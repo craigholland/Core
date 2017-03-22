@@ -1,4 +1,8 @@
 import collections
+import sys
+from core import core_utils
+from core.core_error import *
+
 
 class _NotEqualMixin(object):
   """Mix-in class that implements __ne__ in terms of __eq__."""
@@ -148,25 +152,26 @@ class _BaseValue(_NotEqualMixin):
   def __hash__(self):
     raise TypeError('_BaseValue is not immutable')
 
-
-def _unpack_user(v):
-  """Internal helper to unpack a User value from a protocol buffer."""
-  uv = v.uservalue()
-  email = unicode(uv.email().decode('utf-8'))
-  auth_domain = unicode(uv.auth_domain().decode('utf-8'))
-  obfuscated_gaiaid = uv.obfuscated_gaiaid().decode('utf-8')
-  obfuscated_gaiaid = unicode(obfuscated_gaiaid)
-
-  federated_identity = None
-  if uv.has_federated_identity():
-    federated_identity = unicode(
-        uv.federated_identity().decode('utf-8'))
-
-  value = users.User(email=email,
-                     _auth_domain=auth_domain,
-                     _user_id=obfuscated_gaiaid,
-                     federated_identity=federated_identity)
-  return value
+# TEMP REMOVE
+#
+# def _unpack_user(v):
+#   """Internal helper to unpack a User value from a protocol buffer."""
+#   uv = v.uservalue()
+#   email = unicode(uv.email().decode('utf-8'))
+#   auth_domain = unicode(uv.auth_domain().decode('utf-8'))
+#   obfuscated_gaiaid = uv.obfuscated_gaiaid().decode('utf-8')
+#   obfuscated_gaiaid = unicode(obfuscated_gaiaid)
+#
+#   federated_identity = None
+#   if uv.has_federated_identity():
+#     federated_identity = unicode(
+#         uv.federated_identity().decode('utf-8'))
+#
+#   value = users.User(email=email,
+#                      _auth_domain=auth_domain,
+#                      _user_id=obfuscated_gaiaid,
+#                      federated_identity=federated_identity)
+#   return value
 
 
 
@@ -252,27 +257,61 @@ def delete_multi(keys, **ctx_options):
           for future in delete_multi_async(keys, **ctx_options)]
 
 
-def get_indexes_async(**ctx_options):
-  """Get a data structure representing the configured indexes.
+def ValidateString(value,
+                   name='unused',
+                   exception=BadValueError,
+                   max_len=1500,
+                   empty_ok=False):
+  """Raises an exception if value is not a valid string or a subclass thereof.
+
+  A string is valid if it's not empty, no more than _MAX_STRING_LENGTH bytes,
+  and not a Blob. The exception type can be specified with the exception
+  argument; it defaults to BadValueError.
 
   Args:
-    **ctx_options: Context options.
-
-  Returns:
-    A future.
+    value: the value to validate.
+    name: the name of this value; used in the exception message.
+    exception: the type of exception to raise.
+    max_len: the maximum allowed length, in bytes.
+    empty_ok: allow empty value.
   """
-  from . import tasklets
-  ctx = tasklets.get_context()
-  return ctx.get_indexes(**ctx_options)
+  if value is None and empty_ok:
+    return
+  #if not isinstance(value, basestring) or isinstance(value, Blob):
+  if not isinstance(value, basestring):
+    raise exception('%s should be a string; received %s:' %
+                    (name, value,))
+  if not value and not empty_ok:
+    raise exception('%s must not be empty.' % name)
+
+  if len(value.encode('utf-8')) > max_len:
+    raise exception('%s must be under %d bytes.' % (name, max_len))
 
 
-def get_indexes(**ctx_options):
-  """Get a data structure representing the configured indexes.
 
-  Args:
-    **ctx_options: Context options.
-
-  Returns:
-    A list of Index objects.
-  """
-  return get_indexes_async(**ctx_options).get_result()
+__all__ = core_utils.build_mod_all_list(sys.modules[__name__])
+# TEMP REMOVE
+# def get_indexes_async(**ctx_options):
+#   """Get a data structure representing the configured indexes.
+#
+#   Args:
+#     **ctx_options: Context options.
+#
+#   Returns:
+#     A future.
+#   """
+#   from . import tasklets
+#   ctx = tasklets.get_context()
+#   return ctx.get_indexes(**ctx_options)
+#
+#
+# def get_indexes(**ctx_options):
+#   """Get a data structure representing the configured indexes.
+#
+#   Args:
+#     **ctx_options: Context options.
+#
+#   Returns:
+#     A list of Index objects.
+#   """
+#   return get_indexes_async(**ctx_options).get_result()

@@ -7,6 +7,7 @@ import functools
 import inspect
 import os
 import sys
+import types
 import logging
 import threading
 
@@ -214,8 +215,22 @@ def decorator(wrapped_decorator):
   return helper
 
 
+def build_mod_all_list(mod):
+  if isinstance(mod, types.ModuleType):
+    all = []
+    for item in dir(mod):
+      if isinstance(getattr(mod, item), (types.FunctionType, types.TypeType)):
+        all.append(item)
+    return all
+  return None
 
-
+def typename(obj):
+  """Returns the type of obj as a string. More descriptive and specific than
+  type(obj), and safe for any object, unlike __class__."""
+  if hasattr(obj, '__class__'):
+    return getattr(obj, '__class__').__name__
+  else:
+    return type(obj).__name__
 
 """ TEMP COMMENTED -- NOT NEEDED RIGHT AWAY ---"""
 # import cgi

@@ -284,48 +284,42 @@ Property subclass is in the docstring for the Property class.
 """
 
 import core.core_utils as utils
-from core.model import core_model_utils as mutils
-from core.model.property.base_property import Property
+from core.model.core_model_utils import *
+from core.model.property.base_property import *
+from core.model.core_model_utils import *
+from core.core_error import *
+#
+# from .google_imports import datastore_errors
+# from .google_imports import datastore_types
+# from .google_imports import entity_pb
 
-from .google_imports import datastore_errors
-from .google_imports import datastore_types
-from .google_imports import entity_pb
-
-from core import key as key_module  # NOTE: 'key' is a common local variable name.
-
-_NestedCounter = mutils._NestedCounter
-_NotEqualMixin = mutils._NotEqualMixin
-ModelAttribute = mutils.ModelAttribute
-_BaseValue = mutils._BaseValue
+from core.model import core_key as key_module  # NOTE: 'key' is a common local variable name.
 
 Key = key_module.Key  # For export.
 
-
-BlobKey = datastore_types.BlobKey
-GeoPt = datastore_types.GeoPt
-
-Rollback = datastore_errors.Rollback
-
-
-
-# Various imported limits.
-_MAX_LONG = key_module._MAX_LONG
-_MAX_STRING_LENGTH = datastore_types._MAX_STRING_LENGTH
-
-# Map index directions to human-readable strings.
-_DIR_MAP = {
-    entity_pb.Index_Property.ASCENDING: 'asc',
-    entity_pb.Index_Property.DESCENDING: 'desc',
-}
-
-# Map index states to human-readable strings.
-_STATE_MAP = {
-    entity_pb.CompositeIndex.ERROR: 'error',
-    entity_pb.CompositeIndex.DELETED: 'deleting',
-    entity_pb.CompositeIndex.READ_WRITE: 'serving',
-    entity_pb.CompositeIndex.WRITE_ONLY: 'building',
-}
-
+#
+# BlobKey = datastore_types.BlobKey
+# GeoPt = datastore_types.GeoPt
+#
+#
+# # Various imported limits.
+# _MAX_LONG = key_module._MAX_LONG
+# _MAX_STRING_LENGTH = datastore_types._MAX_STRING_LENGTH
+#
+# # Map index directions to human-readable strings.
+# _DIR_MAP = {
+#     entity_pb.Index_Property.ASCENDING: 'asc',
+#     entity_pb.Index_Property.DESCENDING: 'desc',
+# }
+#
+# # Map index states to human-readable strings.
+# _STATE_MAP = {
+#     entity_pb.CompositeIndex.ERROR: 'error',
+#     entity_pb.CompositeIndex.DELETED: 'deleting',
+#     entity_pb.CompositeIndex.READ_WRITE: 'serving',
+#     entity_pb.CompositeIndex.WRITE_ONLY: 'building',
+# }
+#
 
 
 
@@ -565,7 +559,7 @@ class Model(_NotEqualMixin):
     if key is not None:
       if (id is not None or parent is not None or
           app is not None or namespace is not None):
-        raise datastore_errors.BadArgumentError(
+        raise BadArgumentError(
             'Model constructor given key= does not accept '
             'id=, app=, namespace=, or parent=.')
       self._key = _validate_key(key, entity=self)
@@ -1385,10 +1379,15 @@ class Expando(Model):
                          'base class.' % name)
     del self._properties[name]
 
-
+def _validate_key(value, entity=None):
+  if not isinstance(value, Key):
+    # TODO: BadKeyError.
+    raise BadValueError('Expected Key, got %r' % value)
+  if entity and entity.__class__ not in (Model, Expando):
+    if value.kind() != entity._get_kind():
+      raise KindError('Expected Key kind to be %s; received %s' %
+                      (entity._get_kind(), value.kind()))
+  return value
 
 # Update __all__ to contain all property and Exception subclasses.
-for _name, _object in globals().items():
-  if ((_name.endswith('property') and issubclass(_object, Property)) or
-      (_name.endswith('Error') and issubclass(_object, Exception))):
-    __all__.append(_name)
+__all__ = utils.build_mod_all_list(sys.modules[__name__])

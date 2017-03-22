@@ -169,3 +169,15 @@ class CommittedButStillApplying(Timeout):
   applied soon. You can roll them forward immediately by reading one of the
   entities inside a transaction.
   """
+
+
+class ProtocolBufferDecodeError(Error):
+  """Error occurred while decoding buffer."""
+
+
+class ProtocolBufferEncodeError(Error):
+  """Error occurred while encoding buffer."""
+
+
+class ProtocolBufferReturnError(Error):
+  """Error occurred while returning buffer."""
