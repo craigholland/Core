@@ -4,7 +4,7 @@ from core.model.property import base_property as bp
 Property = bp.Property
 
 class ModelKey(Property):
-  """Special property to store the Model key."""
+  """Special property to store the Model key_bk."""
 
   def __init__(self):
     super(ModelKey, self).__init__()
@@ -25,18 +25,18 @@ class ModelKey(Property):
     return bp._validate_key(value)
 
   def _set_value(self, entity, value):
-    """Setter for key attribute."""
+    """Setter for key_bk attribute."""
     if value is not None:
       value = bp._validate_key(value, entity=entity)
       value = entity._validate_key(value)
     entity._entity_key = value
 
   def _get_value(self, entity):
-    """Getter for key attribute."""
+    """Getter for key_bk attribute."""
     return entity._entity_key
 
   def _delete_value(self, entity):
-    """Deleter for key attribute."""
+    """Deleter for key_bk attribute."""
     entity._entity_key = None
 
 
@@ -665,7 +665,7 @@ class StructuredProperty(_StructuredGetForDictMixin):
 
   def __getattr__(self, attrname):
     """Dynamically get a subproperty."""
-    # Optimistically try to use the dict key.
+    # Optimistically try to use the dict key_bk.
     prop = self._modelclass._properties.get(attrname)
     # We're done if we have a hit and _code_name matches.
     if prop is None or prop._code_name != attrname:

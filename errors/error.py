@@ -34,14 +34,14 @@ class Errors(object):
     self._errors.clear()
 
   def Get(self, key):
-    """Gets error messages by key.
+    """Gets error messages by key_bk.
 
     Args:
-      key: str, the key whose messages to retrieve. If omitted, the messages
-          associated with the default key are retrieved.
+      key_bk: str, the key_bk whose messages to retrieve. If omitted, the messages
+          associated with the default key_bk are retrieved.
 
     Returns:
-      A list of messages for the given key, or None if the key is not present.
+      A list of messages for the given key_bk, or None if the key_bk is not present.
     """
     if not key:
       key = self.DEFAULT_KEY
@@ -55,13 +55,13 @@ class Errors(object):
     return self._errors.copy()
 
   def Add(self, key, message, *messages):
-    """Associates one or more messages with a given key.
+    """Associates one or more messages with a given key_bk.
 
     Args:
-      key: str, the key to associate with a message. If omitted, the messages
-          are associated with the default key.
-      message: str, the message to associate with the key.
-      *messages: additional messages to associate with the key.
+      key_bk: str, the key_bk to associate with a message. If omitted, the messages
+          are associated with the default key_bk.
+      message: str, the message to associate with the key_bk.
+      *messages: additional messages to associate with the key_bk.
     """
     if not key:
       key = self.DEFAULT_KEY
@@ -72,13 +72,13 @@ class Errors(object):
     """Gets a JSON string representation of the error object.
 
     Args:
-      format_func: function, used to format the list of messages for each key
+      format_func: function, used to format the list of messages for each key_bk
           before transforming to JSON. The function should accept a list of
           strings and return a value that is JSON-serializable. The default
           behavior is to join each list of messages with a newline character.
 
     Returns:
-      A JSON string of key/messages pairs.
+      A JSON string of key_bk/messages pairs.
     """
     errors = {k: format_func(v) for k, v in self._errors.iteritems()}
     return json.dumps(errors)
