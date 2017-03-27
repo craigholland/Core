@@ -293,7 +293,7 @@ from core.core_error import *
 # from .google_imports import datastore_types
 # from .google_imports import entity_pb
 
-from core.model import core_key as key_module  # NOTE: 'key' is a common local variable name.
+from core.model import core_key as key_module  # NOTE: 'key_bk' is a common local variable name.
 
 Key = key_module.Key  # For export.
 
@@ -518,7 +518,7 @@ class Model(_NotEqualMixin):
   _values = None
   _projection = ()  # Tuple of names of projected properties.
 
-  # Hardcoded pseudo-property for the key.
+  # Hardcoded pseudo-property for the key_bk.
   _key = ModelKey()
   key = _key
 
@@ -529,17 +529,17 @@ class Model(_NotEqualMixin):
     call to .put().
 
     Keyword Args:
-      key: Key instance for this model. If key is used, id and parent must
+      key_bk: Key instance for this model. If key_bk is used, id and parent must
         be None.
-      id: Key id for this model. If id is used, key must be None.
+      id: Key id for this model. If id is used, key_bk must be None.
       parent: Key instance for the parent model or None for a top-level one.
-        If parent is used, key must be None.
+        If parent is used, key_bk must be None.
       namespace: Optional namespace.
       app: Optional app ID.
       **kwds: Keyword arguments mapping to properties of this model.
 
-    Note: you cannot define a property named key; the .key attribute
-    always refers to the entity's key.  But you can define properties
+    Note: you cannot define a property named key_bk; the .key_bk attribute
+    always refers to the entity's key_bk.  But you can define properties
     named id or parent.  Values for the latter cannot be passed
     through the constructor, but can be assigned to entity attributes
     after the entity has been created.
@@ -550,7 +550,7 @@ class Model(_NotEqualMixin):
     # named 'self'.
     (self,) = args
     get_arg = self.__get_arg
-    key = get_arg(kwds, 'key')
+    key = get_arg(kwds, 'key_bk')
     id = get_arg(kwds, 'id')
     app = get_arg(kwds, 'app')
     namespace = get_arg(kwds, 'namespace')
@@ -560,7 +560,7 @@ class Model(_NotEqualMixin):
       if (id is not None or parent is not None or
           app is not None or namespace is not None):
         raise BadArgumentError(
-            'Model constructor given key= does not accept '
+            'Model constructor given key_bk= does not accept '
             'id=, app=, namespace=, or parent=.')
       self._key = _validate_key(key, entity=self)
     elif (id is not None or parent is not None or
@@ -599,7 +599,7 @@ class Model(_NotEqualMixin):
     Each keyword argument will be used to set a corresponding
     property.  Keywords must refer to valid property name.  This is
     similar to passing keyword arguments to the Model constructor,
-    except that no provisions for key, id or parent are made.
+    except that no provisions for key_bk, id or parent are made.
     """
     self._set_attributes(kwds)
   populate = _populate
@@ -658,7 +658,7 @@ class Model(_NotEqualMixin):
         args.append('%s=%s' % (prop._code_name, rep))
     args.sort()
     if self._key is not None:
-      args.insert(0, 'key=%r' % self._key)
+      args.insert(0, 'key_bk=%r' % self._key)
     if self._projection:
       args.append('_projection=%r' % (self._projection,))
     s = '%s(%s)' % (self.__class__.__name__, ', '.join(args))
@@ -726,7 +726,7 @@ class Model(_NotEqualMixin):
     return modelclass
 
   def _has_complete_key(self):
-    """Return whether this entity has a complete key."""
+    """Return whether this entity has a complete key_bk."""
     return self._key is not None and self._key.id() is not None
   has_complete_key = _has_complete_key
 
@@ -745,8 +745,8 @@ class Model(_NotEqualMixin):
     if other.__class__ is not self.__class__:
       return NotImplemented
     if self._key != other._key:
-      # TODO: If one key is None and the other is an explicit
-      # incomplete key of the simplest form, this should be OK.
+      # TODO: If one key_bk is None and the other is an explicit
+      # incomplete key_bk of the simplest form, this should be OK.
       return False
     return self._equivalent(other)
 
@@ -784,7 +784,7 @@ class Model(_NotEqualMixin):
       pb = entity_pb.EntityProto()
 
     if set_key:
-      # TODO: Move the key stuff into ModelAdapter.entity_to_pb()?
+      # TODO: Move the key_bk stuff into ModelAdapter.entity_to_pb()?
       self._key_to_pb(pb)
 
     for unused_name, prop in sorted(self._properties.iteritems()):
@@ -793,7 +793,7 @@ class Model(_NotEqualMixin):
     return pb
 
   def _key_to_pb(self, pb):
-    """Internal helper to copy the key into a protobuf."""
+    """Internal helper to copy the key_bk into a protobuf."""
     key = self._key
     if key is None:
       pairs = [(self._get_kind(), None)]
@@ -803,7 +803,7 @@ class Model(_NotEqualMixin):
       pb.mutable_key().CopyFrom(ref)
     group = pb.mutable_entity_group()  # Must initialize this.
     # To work around an SDK issue, only set the entity group if the
-    # full key is complete.  TODO: Remove the top test once fixed.
+    # full key_bk is complete.  TODO: Remove the top test once fixed.
     if key is not None and key.id():
       elem = ref.path().element(0)
       if elem.id() or elem.name():
@@ -817,10 +817,10 @@ class Model(_NotEqualMixin):
     if ent is None:
       ent = cls()
 
-    # A key passed in overrides a key in the pb.
+    # A key_bk passed in overrides a key_bk in the pb.
     if key is None and pb.key().path().element_size():
       key = Key(reference=pb.key())
-    # If set_key is not set, skip a trivial incomplete key.
+    # If set_key is not set, skip a trivial incomplete key_bk.
     if key is not None and (set_key or key.id() or key.parent()):
       ent._key = key
 
@@ -1020,10 +1020,10 @@ class Model(_NotEqualMixin):
     """Validation for _key attribute (designed to be overridden).
 
     Args:
-      key: Proposed Key to use for entity.
+      key_bk: Proposed Key to use for entity.
 
     Returns:
-      A valid key.
+      A valid key_bk.
     """
     return key
 
@@ -1073,11 +1073,11 @@ class Model(_NotEqualMixin):
   def _put(self, **ctx_options):
     """Write this entity to Cloud Datastore.
 
-    If the operation creates or completes a key, the entity's key
-    attribute is set to the new, complete key.
+    If the operation creates or completes a key_bk, the entity's key_bk
+    attribute is set to the new, complete key_bk.
 
     Returns:
-      The key for the entity.  This is always a complete key.
+      The key_bk for the entity.  This is always a complete key_bk.
     """
     return self._put_async(**ctx_options).get_result()
   put = _put
@@ -1112,15 +1112,15 @@ class Model(_NotEqualMixin):
     Keyword Args:
       namespace: Optional namespace.
       app: Optional app ID.
-      parent: Parent entity key, if any.
+      parent: Parent entity key_bk, if any.
       context_options: ContextOptions object (not keyword args!) or None.
       **kwds: Keyword arguments to pass to the constructor of the model class
-        if an instance for the specified key name does not already exist. If
+        if an instance for the specified key_bk name does not already exist. If
         an instance with the supplied key_name and parent already exists,
         these arguments will be discarded.
 
     Returns:
-      Existing instance of Model class with the specified key name and parent
+      Existing instance of Model class with the specified key_bk name and parent
       or a new one that has just been created.
     """
     cls, args = args[0], args[1:]
@@ -1177,14 +1177,14 @@ class Model(_NotEqualMixin):
 
   @classmethod
   def _allocate_ids(cls, size=None, max=None, parent=None, **ctx_options):
-    """Allocates a range of key IDs for this model class.
+    """Allocates a range of key_bk IDs for this model class.
 
     Args:
       size: Number of IDs to allocate. Either size or max can be specified,
         not both.
       max: Maximum ID to allocate. Either size or max can be specified,
         not both.
-      parent: Parent key for which the IDs will be allocated.
+      parent: Parent key_bk for which the IDs will be allocated.
       **ctx_options: Context options.
 
     Returns:
@@ -1197,7 +1197,7 @@ class Model(_NotEqualMixin):
   @classmethod
   def _allocate_ids_async(cls, size=None, max=None, parent=None,
                           **ctx_options):
-    """Allocates a range of key IDs for this model class.
+    """Allocates a range of key_bk IDs for this model class.
 
     This is the asynchronous version of Model._allocate_ids().
     """
@@ -1221,8 +1221,8 @@ class Model(_NotEqualMixin):
     This is really just a shorthand for Key(cls, id, ...).get().
 
     Args:
-      id: A string or integer key ID.
-      parent: Optional parent key of the model to get.
+      id: A string or integer key_bk ID.
+      parent: Optional parent key_bk of the model to get.
       namespace: Optional namespace.
       app: Optional app ID.
       **ctx_options: Context options.

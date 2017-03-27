@@ -120,7 +120,7 @@ class BadQueryError(Error):
   """
 
 class BadKeyError(Error):
-  """Raised by Key.__str__ when the key is invalid.
+  """Raised by Key.__str__ when the key_bk is invalid.
   """
 
 class InternalError(Error):

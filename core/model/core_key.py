@@ -80,12 +80,12 @@ _MAX_KEYPART_BYTES = 500
 
 
 class Key(object):
-  """An immutable datastore key.
+  """An immutable datastore key_bk.
 
   For flexibility and convenience, multiple constructor signatures are
   supported.
 
-  The primary way to construct a key is using positional arguments:
+  The primary way to construct a key_bk is using positional arguments:
   - Key(kind1, id1, kind2, id2, ...).
 
   This is shorthand for either of the following two longer forms:
@@ -93,7 +93,7 @@ class Key(object):
   - Key(flat=[kind1, id1, kind2, id2, ...])
 
   Either of the above constructor forms can additionally pass in another
-  key using parent=<key>.  The (kind, id) pairs of the parent key are
+  key_bk using parent=<key_bk>.  The (kind, id) pairs of the parent key_bk are
   inserted before the (kind, id) pairs passed explicitly.
 
   You can also construct a Key from a 'url-safe' encoded string:
@@ -122,59 +122,59 @@ class Key(object):
   once it has been created.  This is enforced by the implementation as
   well as Python allows.
 
-  For access to the contents of a key, the following methods and
+  For access to the contents of a key_bk, the following methods and
   operations are supported:
 
-  - repr(key), str(key) -- return a string representation resembling
+  - repr(key_bk), str(key_bk) -- return a string representation resembling
     the shortest constructor form, omitting the app and namespace
     unless they differ from the default value.
 
   - key1 == key2, key1 != key2 -- comparison for equality between Keys.
 
-  - hash(key) -- a hash value sufficient for storing Keys in a dict.
+  - hash(key_bk) -- a hash value sufficient for storing Keys in a dict.
 
-  - key.pairs() -- a tuple of (kind, id) pairs.
+  - key_bk.pairs() -- a tuple of (kind, id) pairs.
 
-  - key.flat() -- a tuple of flattened kind and id values, i.e.
+  - key_bk.flat() -- a tuple of flattened kind and id values, i.e.
     (kind1, id1, kind2, id2, ...).
 
-  - key.app() -- the application id.
+  - key_bk.app() -- the application id.
 
-  - key.id() -- the string or integer id in the last (kind, id) pair,
-    or None if the key is incomplete.
+  - key_bk.id() -- the string or integer id in the last (kind, id) pair,
+    or None if the key_bk is incomplete.
 
-  - key.string_id() -- the string id in the last (kind, id) pair,
-    or None if the key has an integer id or is incomplete.
+  - key_bk.string_id() -- the string id in the last (kind, id) pair,
+    or None if the key_bk has an integer id or is incomplete.
 
-  - key.integer_id() -- the integer id in the last (kind, id) pair,
-    or None if the key has a string id or is incomplete.
+  - key_bk.integer_id() -- the integer id in the last (kind, id) pair,
+    or None if the key_bk has a string id or is incomplete.
 
-  - key.namespace() -- the namespace.
+  - key_bk.namespace() -- the namespace.
 
-  - key.kind() -- a shortcut for key.pairs()[-1][0].
+  - key_bk.kind() -- a shortcut for key_bk.pairs()[-1][0].
 
-  - key.parent() -- a Key constructed from all but the last (kind, id)
+  - key_bk.parent() -- a Key constructed from all but the last (kind, id)
     pairs.
 
-  - key.urlsafe() -- a websafe-base64-encoded serialized Reference.
+  - key_bk.urlsafe() -- a websafe-base64-encoded serialized Reference.
 
-  - key.serialized() -- a serialized Reference.
+  - key_bk.serialized() -- a serialized Reference.
 
-  - key.reference() -- a Reference object.  The caller promises not to
+  - key_bk.reference() -- a Reference object.  The caller promises not to
     mutate it.
 
   Keys also support interaction with the datastore; these methods are
   the only ones that engage in any kind of I/O activity.  For Future
   objects, see the document for ndb/tasklets.py.
 
-  - key.get() -- return the entity for the Key.
+  - key_bk.get() -- return the entity for the Key.
 
-  - key.get_async() -- return a Future whose eventual result is
+  - key_bk.get_async() -- return a Future whose eventual result is
     the entity for the Key.
 
-  - key.delete() -- delete the entity for the Key.
+  - key_bk.delete() -- delete the entity for the Key.
 
-  - key.delete_async() -- asynchronously delete the entity for the Key.
+  - key_bk.delete_async() -- asynchronously delete the entity for the Key.
 
   Keys may be pickled.
 
@@ -199,7 +199,7 @@ class Key(object):
         kwargs['flat'] = _args
     self = super(Key, cls).__new__(cls)
     # Either __reference or (__pairs, __app, __namespace) must be set.
-    # Either one fully specifies a key; if both are set they must be
+    # Either one fully specifies a key_bk; if both are set they must be
     # consistent with each other.
     if 'reference' in kwargs or 'serialized' in kwargs or 'urlsafe' in kwargs:
       (self.__reference,
@@ -256,7 +256,7 @@ class Key(object):
             'Expected Key instance, got %r' % parent)
       if not parent.id():
         raise BadArgumentError(
-            'Parent cannot have incomplete key')
+            'Parent cannot have incomplete key_bk')
       pairs[:0] = parent.pairs()
       if app:
         if app != parent.app():
@@ -446,7 +446,7 @@ class Key(object):
     return Key(pairs=pairs[:-1], app=self.__app, namespace=self.__namespace)
 
   def root(self):
-    """Return the root key.  This is either self or the highest parent."""
+    """Return the root key_bk.  This is either self or the highest parent."""
     pairs = self.__pairs
     if len(pairs) <= 1:
       return self
@@ -464,7 +464,7 @@ class Key(object):
     """Return the string or integer id in the last (kind, id) pair, if any.
 
     Returns:
-      A string or integer id, or None if the key is incomplete.
+      A string or integer id, or None if the key_bk is incomplete.
     """
     return self.__pairs[-1][1]
 
@@ -472,7 +472,7 @@ class Key(object):
     """Return the string id in the last (kind, id) pair, if any.
 
     Returns:
-      A string id, or None if the key has an integer id or is incomplete.
+      A string id, or None if the key_bk has an integer id or is incomplete.
     """
     id = self.id()
     if not isinstance(id, basestring):
@@ -483,7 +483,7 @@ class Key(object):
     """Return the integer id in the last (kind, id) pair, if any.
 
     Returns:
-      An integer id, or None if the key has a string id or is incomplete.
+      An integer id, or None if the key_bk has a string id or is incomplete.
     """
     id = self.id()
     if not isinstance(id, (int, long)):

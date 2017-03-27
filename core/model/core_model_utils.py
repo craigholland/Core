@@ -196,7 +196,7 @@ def get_multi(keys, **ctx_options):
     **ctx_options: Context options.
 
   Returns:
-    A list whose items are either a Model instance or None if the key wasn't
+    A list whose items are either a Model instance or None if the key_bk wasn't
     found.
   """
   return [future.get_result()
@@ -251,7 +251,7 @@ def delete_multi(keys, **ctx_options):
     **ctx_options: Context options.
 
   Returns:
-    A list whose items are all None, one per deleted key.
+    A list whose items are all None, one per deleted key_bk.
   """
   return [future.get_result()
           for future in delete_multi_async(keys, **ctx_options)]

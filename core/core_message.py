@@ -326,9 +326,9 @@ class Message(six.with_metaclass(_MessageClass, object)):
                                   variant_default=None):
     """Get the value and variant of an unknown field in this message.
     Args:
-      key: The name or number of the field to retrieve.
-      value_default: Value to be returned if the key isn't found.
-      variant_default: Value to be returned as variant if the key isn't
+      key_bk: The name or number of the field to retrieve.
+      value_default: Value to be returned if the key_bk isn't found.
+      variant_default: Value to be returned as variant if the key_bk isn't
         found.
     Returns:
       (value, variant), where value and variant are whatever was passed
@@ -341,7 +341,7 @@ class Message(six.with_metaclass(_MessageClass, object)):
   def set_unrecognized_field(self, key, value, variant):
     """Set an unrecognized field, used when decoding a message.
     Args:
-      key: The name or number used to refer to this unknown value.
+      key_bk: The name or number used to refer to this unknown value.
       value: The value of the field.
       variant: Type information needed to interpret the value or re-encode it.
     Raises:

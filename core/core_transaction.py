@@ -36,7 +36,7 @@ def transaction(callback, **ctx_options):
 
   Note:
     To pass arguments to a callback function, use a lambda, e.g.
-      def my_callback(key, inc):
+      def my_callback(key_bk, inc):
         ...
       transaction(lambda: my_callback(Key(...), 1))
   """
