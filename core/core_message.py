@@ -21,17 +21,17 @@ Public Exceptions (indentation indications class hierarchy):
   ValidationError: Raised when a message or field is not valid.
   DefinitionNotFoundError: Raised when definition not found.
 """
-import six
 import weakref
-import types
+
+import base
+import six
+from core.base import core_enum as enum
 
 import core_constants as constants
-import core_definition as definition
-import core_enum as enum
 import core_error as error
-import core_utils as util
 import core_field as field
-
+import core_utils as util
+from core.foundation.meta import core_definition as definition
 
 
 class _MessageClass(definition._DefinitionClass):
@@ -726,7 +726,7 @@ def find_definition(name, relative_to=None, importer=__import__):
   """
   # Check parameters.
   if not (relative_to is None or
-          isinstance(relative_to, types.ModuleType) or
+          isinstance(relative_to, base.ModuleType) or
           isinstance(relative_to, type) and issubclass(relative_to, Message)):
     raise TypeError('relative_to must be None, Message definition or module.  '
                     'Found: %s' % relative_to)
@@ -758,7 +758,7 @@ def find_definition(name, relative_to=None, importer=__import__):
         next = attribute
       else:
         # If module, look for sub-module.
-        if next is None or isinstance(next, types.ModuleType):
+        if next is None or isinstance(next, base.ModuleType):
           if next is None:
             module_name = node
           else:
@@ -772,7 +772,7 @@ def find_definition(name, relative_to=None, importer=__import__):
         else:
           return None
 
-      if (not isinstance(next, types.ModuleType) and
+      if (not isinstance(next, base.ModuleType) and
           not (isinstance(next, type) and
                issubclass(next, (Message, enum.Enum)))):
         return None
@@ -796,7 +796,7 @@ def find_definition(name, relative_to=None, importer=__import__):
         raise error.DefinitionNotFoundError('Could not find definition for %s'
                                       % (name,))
       else:
-        if isinstance(relative_to, types.ModuleType):
+        if isinstance(relative_to, base.ModuleType):
           # Find parent module.
           module_path = relative_to.__name__.split('.')[:-1]
           if not module_path:

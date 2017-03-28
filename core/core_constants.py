@@ -11,7 +11,7 @@ _POST_INIT_FIELD_ATTRIBUTE_NAMES = frozenset(
      '_EnumField__resolved_default'])
 
 _POST_INIT_ATTRIBUTE_NAMES = frozenset(
-    ['_message_definition'])
+    ['_message_definition', '_DEFAULT'])
 
 # Maximum enumeration value as defined by the protocol buffers standard.
 # All enum values must be less than or equal to this value.

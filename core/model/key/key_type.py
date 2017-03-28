@@ -44,12 +44,7 @@ class Key1(object):
 
 att_visibility_options = ['hidden', 'aliased', 'normal']
 class AttributeFieldVisibility(enum.Enum):
-  """
-Visibility options:
-Hidden: Field is not viewable, with no aliased accessibility.
-Aliased: Field is not viewable, but has alias accessibility.
-Normal (default): Field is viewable, and is normally accessible.
-"""
+
   NORMAL = 0
   ALIASED = 1
   HIDDEN = 2

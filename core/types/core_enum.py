@@ -1,10 +1,9 @@
 """Core Meta classes"""
 import six
 
-import core_constants as constants
-import core_definition as definition
-import core_error as error
-import core_utils as util
+import core.core_constants as constants
+import core.core_error as error
+from core.types.meta import core_definition as definition
 
 
 class _EnumClass(definition._DefinitionClass):
@@ -25,6 +24,7 @@ class _EnumClass(definition._DefinitionClass):
 
   def __init__(cls, name, bases, dct):
     # Can only define one level of sub-classes below Enum.
+
     if not (bases == (object,) or bases == (Enum,)):
       raise error.EnumDefinitionError('Enum type %s may only inherit from Enum' %
                                 (name,))
@@ -70,7 +70,10 @@ class _EnumClass(definition._DefinitionClass):
         cls.__by_name[instance.name] = instance
         cls.__by_number[instance.number] = instance
         setattr(cls, attribute, instance)
-
+    if cls.__by_number:
+      lowest = min(cls.__by_number.keys())
+      instance = cls.lookup_by_number(lowest)
+      setattr(cls, '_DEFAULT', instance)
     definition._DefinitionClass.__init__(cls, name, bases, dct)
 
   def __iter__(cls):
@@ -112,8 +115,33 @@ class _EnumClass(definition._DefinitionClass):
     """
     return cls.__by_number[number]
 
+  def set_default(self, name_or_number):
+    """Set Default value for Enum. Can only change once."""
+    cls = self.__class__
+    if self._DEFAULT == cls.lookup_by_number(self, min(cls.numbers(self))):
+      if isinstance(name_or_number, int):
+        if name_or_number in cls.numbers(self):
+          self._DEFAULT = cls.lookup_by_number(self, name_or_number)
+        else:
+          raise TypeError('No such value for %s in Enum %s' %
+                          (name_or_number, cls.__name__))
+      else:
+        if name_or_number in cls.names(self):
+          self._DEFAULT = cls.lookup_by_name(self, name_or_number)
+        else:
+          raise TypeError('No such name for %s in Enum %s' %
+                          (name_or_number, cls.__name__))
+    else:
+      raise AttributeError('%s._DEFAULT is locked.' % self.__name__)
+
+
   def __len__(cls):
     return len(cls.__by_name)
+
+
+def defaultValue(Enum_class, value):
+  if issubclass(Enum_class, Enum):
+    Enum_class.__class__.set_default(Enum_class, value)
 
 
 class Enum(six.with_metaclass(_EnumClass, object)):
@@ -166,6 +194,7 @@ class Enum(six.with_metaclass(_EnumClass, object)):
       return
     object.__setattr__(self, 'name', name)
     object.__setattr__(self, 'number', number)
+
 
   def __setattr__(self, name, value):
     raise TypeError('May not change enum values')
