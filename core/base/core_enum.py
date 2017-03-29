@@ -3,8 +3,9 @@ import six
 
 import core.core_constants as constants
 import core.core_error as error
-from core.types.meta import core_definition as definition
+import core.base.meta.core_definition as definition
 
+__all__ = ['_EnumClass', 'Enum', 'Variant', 'defaultValue']
 
 class _EnumClass(definition._DefinitionClass):
   """Meta-class used for defining the Enum base class.
@@ -14,7 +15,7 @@ class _EnumClass(definition._DefinitionClass):
   into an instance of that sub-class, with the name of the attribute
   as its name, and the number provided as its value.  It also ensures
   that only one level of Enum class hierarchy is possible.  In other
-  words it is not possible to delcare sub-classes of sub-classes of
+  words it is not possible to declare sub-classes of sub-classes of
   Enum.
   This class also defines some functions in order to restrict the
   behavior of the Enum class and its sub-classes.  It is not possible
@@ -24,10 +25,8 @@ class _EnumClass(definition._DefinitionClass):
 
   def __init__(cls, name, bases, dct):
     # Can only define one level of sub-classes below Enum.
-
     if not (bases == (object,) or bases == (Enum,)):
-      raise error.EnumDefinitionError('Enum type %s may only inherit from Enum' %
-                                (name,))
+      raise error.EnumDefinitionError('Enum type %s may only inherit from Enum' % (name,))
 
     cls.__by_number = {}
     cls.__by_name = {}
@@ -66,10 +65,12 @@ class _EnumClass(definition._DefinitionClass):
 
         # Create enum instance and list in new Enum type.
         instance = object.__new__(cls)
+        # pylint:disable=non-parent-init-called
         cls.__init__(instance, attribute, value)
         cls.__by_name[instance.name] = instance
         cls.__by_number[instance.number] = instance
         setattr(cls, attribute, instance)
+
     if cls.__by_number:
       lowest = min(cls.__by_number.keys())
       instance = cls.lookup_by_number(lowest)
@@ -134,19 +135,14 @@ class _EnumClass(definition._DefinitionClass):
     else:
       raise AttributeError('%s._DEFAULT is locked.' % self.__name__)
 
-
   def __len__(cls):
     return len(cls.__by_name)
 
 
-def defaultValue(Enum_class, value):
-  if issubclass(Enum_class, Enum):
-    Enum_class.__class__.set_default(Enum_class, value)
-
-
-class Enum(six.with_metaclass(_EnumClass, object)):
+class Enum(object):
   """Base class for all enumerated types."""
 
+  __metaclass__ = _EnumClass
   __slots__ = set(('name', 'number'))
 
   def __new__(cls, index):
@@ -312,3 +308,8 @@ class Variant(Enum):
   ENUM     = 14
   SINT32   = 17
   SINT64   = 18
+
+
+def defaultValue(Enum_class, value):
+  if issubclass(Enum_class, Enum):
+    Enum_class.__class__.set_default(Enum_class, value)

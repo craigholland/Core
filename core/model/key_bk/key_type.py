@@ -77,6 +77,8 @@ class Key(object):
     else:
       # empty key_bk
       #self.__reference = entity_pb.Reference()
+      self.__reference = None
+
     self.__reference = None #Some Reference object??
   def to_path(self, _default_id=None, _decode=True, _fail=True):
     """Construct the "path" of this key_bk as a list.

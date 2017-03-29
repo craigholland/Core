@@ -21,20 +21,20 @@ Public Exceptions (indentation indications class hierarchy):
   ValidationError: Raised when a message or field is not valid.
   DefinitionNotFoundError: Raised when definition not found.
 """
+
+import six
+import types
 import weakref
 
-import base
-import six
-from core.base import core_enum as enum
-
-import core_constants as constants
-import core_error as error
-import core_field as field
-import core_utils as util
-from core.foundation.meta import core_definition as definition
+from core.base.core_field import *
+from core.base.core_enum import *
+from core.core_error import *
+from core.base.meta.core_definition import *
+import core.core_constants as constants
+import core.core_utils as util
 
 
-class _MessageClass(definition._DefinitionClass):
+class _MessageClass(_DefinitionClass):
   """Meta-class used for defining the Message base class.
   For more details about Message classes, see the Message class docstring.
   Information contained there may help understanding this class.
@@ -66,8 +66,7 @@ class _MessageClass(definition._DefinitionClass):
     if bases != (object,):
       # Can only define one level of sub-classes below Message.
       if bases != (Message,):
-        raise error.MessageDefinitionError(
-            'Message types may only inherit from Message')
+        raise MessageDefinitionError('Message types may only inherit from Message')
 
       enums = []
       messages = []
@@ -77,7 +76,7 @@ class _MessageClass(definition._DefinitionClass):
         if key in constants._RESERVED_ATTRIBUTE_NAMES:
           continue
 
-        if isinstance(field_type, type) and issubclass(field_type, enum.Enum):
+        if isinstance(field_type, type) and issubclass(field_type, Enum):
           enums.append(key)
           continue
 
@@ -88,13 +87,13 @@ class _MessageClass(definition._DefinitionClass):
           continue
 
         # Reject anything that is not a field.
-        if type(field_type) is field.Field or not isinstance(field_type, field.Field):
-          raise error.MessageDefinitionError(
+        if type(field_type) is Field or not isinstance(field_type, Field):
+          raise MessageDefinitionError(
               'May only use fields in message definitions.  Found: %s = %s' %
               (key, field_type))
 
         if field_type.number in by_number:
-          raise error.DuplicateNumberError(
+          raise DuplicateNumberError(
               'Field with number %d declared more than once in %s' %
               (field_type.number, name))
 
@@ -115,19 +114,19 @@ class _MessageClass(definition._DefinitionClass):
     dct['_Message__by_number'] = by_number
     dct['_Message__by_name'] = by_name
 
-    return definition._DefinitionClass.__new__(cls, name, bases, dct)
+    return _DefinitionClass.__new__(cls, name, bases, dct)
 
   def __init__(cls, name, bases, dct):
     """Initializer required to assign references to new class."""
     if bases != (object,):
       for value in dct.values():
-        if isinstance(value, definition._DefinitionClass) and not value is Message:
+        if isinstance(value, _DefinitionClass) and not value is Message:
           value._message_definition = weakref.ref(cls)
 
       for f in cls.all_fields():
         f._message_definition = weakref.ref(cls)
 
-    definition._DefinitionClass.__init__(cls, name, bases, dct)
+    _DefinitionClass.__init__(cls, name, bases, dct)
 
 
 class Message(six.with_metaclass(_MessageClass, object)):
@@ -152,7 +151,7 @@ class Message(six.with_metaclass(_MessageClass, object)):
     and populated.  Validation that a given value will be compatible with
     a field that it is assigned to can be done through the Field instances
     validate() method.  The validate method used on a message will check that
-    all values of a message and its sub-messages are valid.  Assingning an
+    all values of a message and its sub-messages are valid.  Assigning an
     invalid value to a field will raise a ValidationException.
   Example:
     # Trade type.
@@ -224,7 +223,7 @@ class Message(six.with_metaclass(_MessageClass, object)):
       value = getattr(self, name)
       if value is None:
         if mfield.required:
-          raise error.ValidationError("Message %s is missing required field %s" %
+          raise ValidationError("Message %s is missing required field %s" %
                                 (type(self).__name__, name))
       else:
         try:
@@ -237,7 +236,7 @@ class Message(six.with_metaclass(_MessageClass, object)):
             else:
               message_value = mfield.value_to_message(value)
               message_value.check_initialized()
-        except error.ValidationError as err:
+        except ValidationError as err:
           if not hasattr(err, 'message_name'):
             err.message_name = type(self).__name__
           raise
@@ -249,7 +248,7 @@ class Message(six.with_metaclass(_MessageClass, object)):
     """
     try:
       self.check_initialized()
-    except error.ValidationError:
+    except ValidationError:
       return False
     else:
       return True
@@ -314,7 +313,7 @@ class Message(six.with_metaclass(_MessageClass, object)):
         raise AttributeError('Message %s has no field %s' % (
             message_type.__name__, name))
     if mfield.repeated:
-      self.__tags[mfield.number] = field.FieldList(mfield, [])
+      self.__tags[mfield.number] = FieldList(mfield, [])
     else:
       self.__tags.pop(mfield.number, None)
 
@@ -347,7 +346,7 @@ class Message(six.with_metaclass(_MessageClass, object)):
     Raises:
       TypeError: If the variant is not an instance of messages.Variant.
     """
-    if not isinstance(variant, enum.Variant):
+    if not isinstance(variant, Variant):
       raise TypeError('Variant type %s is not valid.' % variant)
     self.__unrecognized_fields[key] = value, variant
 
@@ -432,7 +431,8 @@ class Message(six.with_metaclass(_MessageClass, object)):
     """
     return not self.__eq__(other)
 
-class MessageField(field.Field):
+
+class MessageField(Field):
   """Field definition for sub-message values.
   Message fields contain instance of other messages.  Instances stored
   on messages stored on message fields  are considered to be owned by
@@ -464,9 +464,9 @@ class MessageField(field.Field):
         ...
   """
 
-  VARIANTS = frozenset([enum.Variant.MESSAGE])
+  VARIANTS = frozenset([Variant.MESSAGE])
 
-  DEFAULT_VARIANT = enum.Variant.MESSAGE
+  DEFAULT_VARIANT = Variant.MESSAGE
 
   @util.positional(3)
   def __init__(self,
@@ -493,7 +493,7 @@ class MessageField(field.Field):
                    issubclass(message_type, Message)))
 
     if not valid_type:
-      raise error.FieldDefinitionError('Invalid message class: %s' % message_type)
+      raise FieldDefinitionError('Invalid message class: %s' % message_type)
 
     if isinstance(message_type, six.string_types):
       self.__type_name = message_type
@@ -530,7 +530,7 @@ class MessageField(field.Field):
       if not (message_type is not Message and
               isinstance(message_type, type) and
               issubclass(message_type, Message)):
-        raise error.FieldDefinitionError('Invalid message class: %s' % message_type)
+        raise FieldDefinitionError('Invalid message class: %s' % message_type)
       self.__type = message_type
     return self.__type
 
@@ -553,7 +553,7 @@ class MessageField(field.Field):
       Value of self.message_type.
     """
     if not isinstance(message, self.message_type):
-      raise error.DecodeError('Expected type %s, got %s: %r' %
+      raise DecodeError('Expected type %s, got %s: %r' %
                         (self.message_type.__name__,
                          type(message).__name__,
                          message))
@@ -569,14 +569,14 @@ class MessageField(field.Field):
       An instance of type self.message_type.
     """
     if not isinstance(value, self.type):
-      raise error.EncodeError('Expected type %s, got %s: %r' %
+      raise EncodeError('Expected type %s, got %s: %r' %
                         (self.type.__name__,
                          type(value).__name__,
                          value))
     return value
 
 
-class EnumField(field.Field):
+class EnumField(Field):
   """Field definition for enum values.
   Enum fields may have default values that are delayed until the associated enum
   type is resolved.  This is necessary to support certain circular references.
@@ -598,9 +598,9 @@ class EnumField(field.Field):
       color = EnumField(Message1.Color, 1, default='RED')
   """
 
-  VARIANTS = frozenset([enum.Variant.ENUM])
+  VARIANTS = frozenset([Variant.ENUM])
 
-  DEFAULT_VARIANT = enum.Variant.ENUM
+  DEFAULT_VARIANT = Variant.ENUM
 
   def __init__(self, enum_type, number, **kwargs):
     """Constructor.
@@ -617,12 +617,12 @@ class EnumField(field.Field):
       FieldDefinitionError when invalid enum_type is provided.
     """
     valid_type = (isinstance(enum_type, six.string_types) or
-                  (enum_type is not enum.Enum and
+                  (enum_type is not Enum and
                    isinstance(enum_type, type) and
-                   issubclass(enum_type, enum.Enum)))
+                   issubclass(enum_type, Enum)))
 
     if not valid_type:
-      raise error.FieldDefinitionError('Invalid enum type: %s' % enum_type)
+      raise FieldDefinitionError('Invalid enum type: %s' % enum_type)
 
     if isinstance(enum_type, six.string_types):
       self.__type_name = enum_type
@@ -657,10 +657,10 @@ class EnumField(field.Field):
     """Enum type used for field."""
     if self.__type is None:
       found_type = find_definition(self.__type_name, self.message_definition())
-      if not (found_type is not enum.Enum and
+      if not (found_type is not Enum and
               isinstance(found_type, type) and
-              issubclass(found_type, enum.Enum)):
-        raise error.FieldDefinitionError('Invalid enum type: %s' % found_type)
+              issubclass(found_type, Enum)):
+        raise FieldDefinitionError('Invalid enum type: %s' % found_type)
 
       self.__type = found_type
     return self.__type
@@ -726,7 +726,7 @@ def find_definition(name, relative_to=None, importer=__import__):
   """
   # Check parameters.
   if not (relative_to is None or
-          isinstance(relative_to, base.ModuleType) or
+          isinstance(relative_to, types.ModuleType) or
           isinstance(relative_to, type) and issubclass(relative_to, Message)):
     raise TypeError('relative_to must be None, Message definition or module.  '
                     'Found: %s' % relative_to)
@@ -758,7 +758,7 @@ def find_definition(name, relative_to=None, importer=__import__):
         next = attribute
       else:
         # If module, look for sub-module.
-        if next is None or isinstance(next, base.ModuleType):
+        if next is None or isinstance(next, types.ModuleType):
           if next is None:
             module_name = node
           else:
@@ -772,16 +772,16 @@ def find_definition(name, relative_to=None, importer=__import__):
         else:
           return None
 
-      if (not isinstance(next, base.ModuleType) and
+      if (not isinstance(next, types.ModuleType) and
           not (isinstance(next, type) and
-               issubclass(next, (Message, enum.Enum)))):
+               issubclass(next, (Message, Enum)))):
         return None
 
     return next
 
   while True:
     found = search_path()
-    if isinstance(found, type) and issubclass(found, (enum.Enum, Message)):
+    if isinstance(found, type) and issubclass(found, (Enum, Message)):
       return found
     else:
       # Find next relative_to to search against.
@@ -793,10 +793,10 @@ def find_definition(name, relative_to=None, importer=__import__):
       #   does this part of search
       if relative_to is None:
         # Fully qualified search was done.  Nothing found.  Fail.
-        raise error.DefinitionNotFoundError('Could not find definition for %s'
+        raise DefinitionNotFoundError('Could not find definition for %s'
                                       % (name,))
       else:
-        if isinstance(relative_to, base.ModuleType):
+        if isinstance(relative_to, types.ModuleType):
           # Find parent module.
           module_path = relative_to.__name__.split('.')[:-1]
           if not module_path:

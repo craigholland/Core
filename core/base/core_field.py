@@ -1,13 +1,13 @@
 import six
 
-import core_constants as constants
-import core_error as error
-import core_utils as util
-from core.base import core_enum as enum
+import core.core_constants as constants
+import core.core_utils as util
+from core.core_error import *
+from core.base.core_enum import *
 
-__all__ =['FieldList', 'Field'
-          'IntegerField', 'FloatField', 'BooleanField',
-          'BytesField', 'StringField']
+__all__ =['FieldList', 'Field', '_FieldMeta',
+          'BaseIntegerField', 'BaseFloatField', 'BaseBooleanField',
+          'BaseBytesField', 'BaseStringField']
 
 class FieldList(list):
   """List implementation that validates field values.
@@ -23,7 +23,7 @@ class FieldList(list):
       sequence: List or tuple to construct list from.
     """
     if not field_instance.repeated:
-      raise error.FieldDefinitionError('FieldList may only accept repeated fields')
+      raise FieldDefinitionError('FieldList may only accept repeated fields')
     self.__field = field_instance
     self.__field.validate(sequence)
     list.__init__(self, sequence)
@@ -101,7 +101,7 @@ class _FieldMeta(type):
     type.__init__(cls, name, bases, dct)
 
 
-class Field(six.with_metaclass(_FieldMeta, object)):
+class Field(object):
 
   __initialized = False
   __variant_to_type = {}
@@ -138,27 +138,27 @@ class Field(six.with_metaclass(_FieldMeta, object)):
       InvalidNumberError when the field number is out of range or reserved.
     """
     if not isinstance(number, int) or not 1 <= number <= constants.MAX_FIELD_NUMBER:
-      raise error.InvalidNumberError('Invalid number for field: %s'
+      raise InvalidNumberError('Invalid number for field: %s'
                                      '\nNumber must be 1 or greater and %d or less' %
                                      (number, constants.MAX_FIELD_NUMBER))
 
     if constants.FIRST_RESERVED_FIELD_NUMBER <= number <= constants.LAST_RESERVED_FIELD_NUMBER:
-      raise error.InvalidNumberError('Tag number %d is a reserved number.\n'
+      raise InvalidNumberError('Tag number %d is a reserved number.\n'
                                      'Numbers %d to %d are reserved' %
                                      (number, constants.FIRST_RESERVED_FIELD_NUMBER,
                                       constants.LAST_RESERVED_FIELD_NUMBER))
 
     if repeated and required:
-      raise error.FieldDefinitionError('Cannot set both repeated and required')
+      raise FieldDefinitionError('Cannot set both repeated and required')
 
     if variant is None:
       variant = self.DEFAULT_VARIANT
 
     if repeated and default is not None:
-      raise error.FieldDefinitionError('Repeated fields may not have defaults')
+      raise FieldDefinitionError('Repeated fields may not have defaults')
 
     if variant not in self.VARIANTS:
-      raise error.InvalidVariantError('Invalid variant: %s\n'
+      raise InvalidVariantError('Invalid variant: %s\n'
                                       'Valid variants for %s are %r' %
                                       (variant, type(self).__name__, sorted(self.VARIANTS)))
 
@@ -170,19 +170,21 @@ class Field(six.with_metaclass(_FieldMeta, object)):
     if default is not None:
       try:
         self.validate_default(default)
-      except error.ValidationError as err:
+      except ValidationError as err:
         try:
           name = self.name
         except AttributeError:
           # For when raising error before name initialization.
-          raise error.InvalidDefaultError('Invalid default value for %s: %r: %s' %
+          raise InvalidDefaultError('Invalid default value for %s: %r: %s' %
                                           (self.__class__.__name__, default, err))
         else:
-          raise error.InvalidDefaultError('Invalid default value for field %s:'
+          raise InvalidDefaultError('Invalid default value for field %s:'
                                           '%r: %s' % (name, default, err))
 
     self.__default = default
-    self.__initialized = True
+
+    if not issubclass(self.__class__, ExpandedField):
+      self.__initialized = True
 
   def __setattr__(self, name, value):
     """Setter overidden to prevent assignment to fields after creation.
@@ -211,7 +213,7 @@ class Field(six.with_metaclass(_FieldMeta, object)):
     # Reaches in to message instance directly to assign to private tags.
     if value is None:
       if self.repeated:
-        raise error.ValidationError(
+        raise ValidationError(
           'May not assign None to repeated field %s' % self.name)
       else:
         message_instance._Message__tags.pop(self.number, None)
@@ -250,17 +252,17 @@ class Field(six.with_metaclass(_FieldMeta, object)):
 
       if value is None:
         if self.required:
-          raise error.ValidationError('Required field is missing')
+          raise ValidationError('Required field is missing')
       else:
         try:
           name = self.name
         except AttributeError:
-          raise error.ValidationError('Expected type %s for %s, '
+          raise ValidationError('Expected type %s for %s, '
                                 'found %s (type %s)' %
                                 (self.type, self.__class__.__name__,
                                  value, type(value)))
         else:
-          raise error.ValidationError('Expected type %s for field %s, '
+          raise ValidationError('Expected type %s for field %s, '
                                 'found %s (type %s)' %
                                 (self.type, name, value, type(value)))
     return value
@@ -285,10 +287,10 @@ class Field(six.with_metaclass(_FieldMeta, object)):
             try:
               name = self.name
             except AttributeError:
-              raise error.ValidationError('Repeated values for %s '
+              raise ValidationError('Repeated values for %s '
                                     'may not be None' % self.__class__.__name__)
             else:
-              raise error.ValidationError('Repeated values for field %s '
+              raise ValidationError('Repeated values for field %s '
                                     'may not be None' % name)
           result.append(validate_element(element))
         return result
@@ -296,10 +298,10 @@ class Field(six.with_metaclass(_FieldMeta, object)):
         try:
           name = self.name
         except AttributeError:
-          raise error.ValidationError('%s is repeated. Found: %s' % (
+          raise ValidationError('%s is repeated. Found: %s' % (
             self.__class__.__name__, value))
         else:
-          raise error.ValidationError('Field %s is repeated. Found: %s' % (name,
+          raise ValidationError('Field %s is repeated. Found: %s' % (name,
                                                                      value))
     return value
 
@@ -360,61 +362,94 @@ class Field(six.with_metaclass(_FieldMeta, object)):
   def lookup_field_type_by_variant(cls, variant):
     return cls.__variant_to_type[variant]
 
+class ExpandedField(Field):
+  def __init__(self, number,
+               required=False,
+               repeated=False,
+               variant=None,
+               default=None,
+               mutable=True,
+               lockable=True,
+               aliases=[],
+               description=None):
+    super(ExpandedField, self).__init__(number, required=required, repeated=repeated,
+                                        variant=variant, default=default)
 
-class IntegerField(Field):
+
+    if not isinstance(aliases, list) or any(
+            [not isinstance(x, str) for x in aliases]):
+      raise TypeError('Aliases must be list of string '
+                      'types: {0}'.format(aliases))
+
+    if not isinstance(mutable, bool):
+      raise TypeError('Mutable must be Boolean value: {0}'.format(mutable))
+
+    if not isinstance(lockable, bool):
+      raise TypeError('Lockable must be Boolean value: {0}'.format(lockable))
+
+    if not mutable and not lockable:
+      raise FieldDefinitionError('Cannot be both immutable and non-lockable.')
+
+    self.mutable = mutable
+    self.lockable = lockable
+    self.aliases = aliases
+    self.description = description
+    self.__initialized = True
+
+class BaseIntegerField():
   """Field definition for integer values."""
 
-  VARIANTS = frozenset([enum.Variant.INT32,
-                        enum.Variant.INT64,
-                        enum.Variant.UINT32,
-                        enum.Variant.UINT64,
-                        enum.Variant.SINT32,
-                        enum.Variant.SINT64,
+  VARIANTS = frozenset([Variant.INT32,
+                        Variant.INT64,
+                        Variant.UINT32,
+                        Variant.UINT64,
+                        Variant.SINT32,
+                        Variant.SINT64,
                        ])
 
-  DEFAULT_VARIANT = enum.Variant.INT64
+  DEFAULT_VARIANT = Variant.INT64
 
   type = six.integer_types
 
 
-class FloatField(Field):
+class BaseFloatField():
   """Field definition for float values."""
 
-  VARIANTS = frozenset([enum.Variant.FLOAT,
-                        enum.Variant.DOUBLE,
+  VARIANTS = frozenset([Variant.FLOAT,
+                        Variant.DOUBLE,
                        ])
 
-  DEFAULT_VARIANT = enum.Variant.DOUBLE
+  DEFAULT_VARIANT = Variant.DOUBLE
 
   type = float
 
 
-class BooleanField(Field):
+class BaseBooleanField():
   """Field definition for boolean values."""
 
-  VARIANTS = frozenset([enum.Variant.BOOL])
+  VARIANTS = frozenset([Variant.BOOL])
 
-  DEFAULT_VARIANT = enum.Variant.BOOL
+  DEFAULT_VARIANT = Variant.BOOL
 
   type = bool
 
 
-class BytesField(Field):
+class BaseBytesField():
   """Field definition for byte string values."""
 
-  VARIANTS = frozenset([enum.Variant.BYTES])
+  VARIANTS = frozenset([Variant.BYTES])
 
-  DEFAULT_VARIANT = enum.Variant.BYTES
+  DEFAULT_VARIANT = Variant.BYTES
 
   type = bytes
 
 
-class StringField(Field):
+class BaseStringField():
   """Field definition for unicode string values."""
 
-  VARIANTS = frozenset([enum.Variant.STRING])
+  VARIANTS = frozenset([Variant.STRING])
 
-  DEFAULT_VARIANT = enum.Variant.STRING
+  DEFAULT_VARIANT = Variant.STRING
 
   type = six.text_type
 
@@ -431,17 +466,40 @@ class StringField(Field):
         try:
           name = self.name
         except AttributeError:
-          validation_error = error.ValidationError(
+          validation_error = ValidationError(
             'Field encountered non-ASCII string %r: %s' % (value,
                                                            err))
         else:
-          validation_error = error.ValidationError(
+          validation_error = ValidationError(
             'Field %s encountered non-ASCII string %r: %s' % (self.name,
                                                               value,
                                                               err))
-          validation_error.field_name = self.name
-        raise error.validation_error
+          validation_field_name = self.name
+        raise validation_error
     else:
-      return super(StringField, self).validate_element(value)
+      return super(BaseStringField, self).validate_element(value)
+
+# Create Field Classes and append __all__
+def createFieldClassNames(name):
+  if name.startswith('Base'):
+    name=name[4:]
+    return name, '{0}Expanded'.format(name)
+  return None, None
+
+for class_name in __all__:
+  regular_name, expanded_name = createFieldClassNames(class_name)
+  if regular_name and expanded_name:
+    class_obj = globals()[class_name]
+
+    class regular_class(Field, class_obj):
+      pass
+
+    class expanded_class(ExpandedField, class_obj):
+      pass
+
+    globals()[regular_name] = regular_class
+    globals()[expanded_name] = expanded_class
+    __all__.append(regular_name)
+    __all__.append(expanded_name)
 
 

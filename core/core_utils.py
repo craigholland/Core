@@ -7,7 +7,7 @@ import functools
 import inspect
 import os
 import sys
-import base
+import types
 import logging
 import threading
 
@@ -216,10 +216,10 @@ def decorator(wrapped_decorator):
 
 
 def build_mod_all_list(mod):
-  if isinstance(mod, base.ModuleType):
+  if isinstance(mod, types.ModuleType):
     all = []
     for item in dir(mod):
-      if isinstance(getattr(mod, item), (base.FunctionType, base.TypeType)):
+      if isinstance(getattr(mod, item), (types.FunctionType, types.TypeType)):
         all.append(item)
     return all
   return None
