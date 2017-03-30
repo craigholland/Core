@@ -6,8 +6,8 @@ from core.core_error import *
 from core.base.core_enum import *
 
 __all__ =['FieldList', 'Field', '_FieldMeta',
-          'BaseIntegerField', 'BaseFloatField', 'BaseBooleanField',
-          'BaseBytesField', 'BaseStringField']
+          'IntegerField', 'FloatField', 'BooleanField',
+          'BytesField', 'StringField']
 
 class FieldList(list):
   """List implementation that validates field values.
@@ -241,7 +241,7 @@ class Field(object):
     Args:
       value: Value to validate.
     Returns:
-      The value casted in the expectes type.
+      The value casted in the expected type.
     Raises:
       ValidationError if value is not expected type.
     """
@@ -362,41 +362,44 @@ class Field(object):
   def lookup_field_type_by_variant(cls, variant):
     return cls.__variant_to_type[variant]
 
-class ExpandedField(Field):
-  def __init__(self, number,
-               required=False,
-               repeated=False,
-               variant=None,
-               default=None,
-               mutable=True,
-               lockable=True,
-               aliases=[],
-               description=None):
-    super(ExpandedField, self).__init__(number, required=required, repeated=repeated,
-                                        variant=variant, default=default)
+# Not sure if ExpandedField is causing problems
+class ExpandedField(object):
+  pass
+# class ExpandedField(Field):
+#   def __init__(self, number,
+#                required=False,
+#                repeated=False,
+#                variant=None,
+#                default=None,
+#                mutable=True,
+#                lockable=True,
+#                aliases=[],
+#                description=None):
+#     super(ExpandedField, self).__init__(number, required=required, repeated=repeated,
+#                                         variant=variant, default=default)
+#
+#
+#     if not isinstance(aliases, list) or any(
+#             [not isinstance(x, str) for x in aliases]):
+#       raise TypeError('Aliases must be list of string '
+#                       'types: {0}'.format(aliases))
+#
+#     if not isinstance(mutable, bool):
+#       raise TypeError('Mutable must be Boolean value: {0}'.format(mutable))
+#
+#     if not isinstance(lockable, bool):
+#       raise TypeError('Lockable must be Boolean value: {0}'.format(lockable))
+#
+#     if not mutable and not lockable:
+#       raise FieldDefinitionError('Cannot be both immutable and non-lockable.')
+#
+#     self.mutable = mutable
+#     self.lockable = lockable
+#     self.aliases = aliases
+#     self.description = description
+#     self.__initialized = True
 
-
-    if not isinstance(aliases, list) or any(
-            [not isinstance(x, str) for x in aliases]):
-      raise TypeError('Aliases must be list of string '
-                      'types: {0}'.format(aliases))
-
-    if not isinstance(mutable, bool):
-      raise TypeError('Mutable must be Boolean value: {0}'.format(mutable))
-
-    if not isinstance(lockable, bool):
-      raise TypeError('Lockable must be Boolean value: {0}'.format(lockable))
-
-    if not mutable and not lockable:
-      raise FieldDefinitionError('Cannot be both immutable and non-lockable.')
-
-    self.mutable = mutable
-    self.lockable = lockable
-    self.aliases = aliases
-    self.description = description
-    self.__initialized = True
-
-class BaseIntegerField():
+class IntegerField(Field):
   """Field definition for integer values."""
 
   VARIANTS = frozenset([Variant.INT32,
@@ -412,7 +415,7 @@ class BaseIntegerField():
   type = six.integer_types
 
 
-class BaseFloatField():
+class FloatField(Field):
   """Field definition for float values."""
 
   VARIANTS = frozenset([Variant.FLOAT,
@@ -424,7 +427,7 @@ class BaseFloatField():
   type = float
 
 
-class BaseBooleanField():
+class BooleanField(Field):
   """Field definition for boolean values."""
 
   VARIANTS = frozenset([Variant.BOOL])
@@ -434,7 +437,7 @@ class BaseBooleanField():
   type = bool
 
 
-class BaseBytesField():
+class BytesField(Field):
   """Field definition for byte string values."""
 
   VARIANTS = frozenset([Variant.BYTES])
@@ -444,7 +447,7 @@ class BaseBytesField():
   type = bytes
 
 
-class BaseStringField():
+class StringField(Field):
   """Field definition for unicode string values."""
 
   VARIANTS = frozenset([Variant.STRING])
@@ -456,9 +459,10 @@ class BaseStringField():
   def validate_element(self, value):
     """Validate StringField allowing for str and unicode.
     Raises:
-      ValidationError if a str value is not 7-bit ascii.
+      ValidationError if a str value is not 7-bit ascii..
     """
     # If value is str is it considered valid.  Satisfies "required=True".
+
     if isinstance(value, bytes):
       try:
         six.text_type(value, 'ascii')
@@ -477,29 +481,7 @@ class BaseStringField():
           validation_field_name = self.name
         raise validation_error
     else:
-      return super(BaseStringField, self).validate_element(value)
+      return super(StringField, self).validate_element(value)
 
-# Create Field Classes and append __all__
-def createFieldClassNames(name):
-  if name.startswith('Base'):
-    name=name[4:]
-    return name, '{0}Expanded'.format(name)
-  return None, None
-
-for class_name in __all__:
-  regular_name, expanded_name = createFieldClassNames(class_name)
-  if regular_name and expanded_name:
-    class_obj = globals()[class_name]
-
-    class regular_class(Field, class_obj):
-      pass
-
-    class expanded_class(ExpandedField, class_obj):
-      pass
-
-    globals()[regular_name] = regular_class
-    globals()[expanded_name] = expanded_class
-    __all__.append(regular_name)
-    __all__.append(expanded_name)
 
 

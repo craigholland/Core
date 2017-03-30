@@ -87,7 +87,7 @@ class _MessageClass(_DefinitionClass):
           continue
 
         # Reject anything that is not a field.
-        if type(field_type) is Field or not isinstance(field_type, Field):
+        if type(field_type) is Field or not issubclass(type(field_type), Field):
           raise MessageDefinitionError(
               'May only use fields in message definitions.  Found: %s = %s' %
               (key, field_type))
@@ -129,7 +129,7 @@ class _MessageClass(_DefinitionClass):
     _DefinitionClass.__init__(cls, name, bases, dct)
 
 
-class Message(six.with_metaclass(_MessageClass, object)):
+class Message(object):
   """Base class for user defined message objects.
   Used to define messages for efficient transmission across network or
   process space.  Messages are defined using the field classes (IntegerField,
@@ -180,7 +180,7 @@ class Message(six.with_metaclass(_MessageClass, object)):
     # Now object is initialized!
     order.check_initialized()
   """
-
+  __metaclass__ = _MessageClass
   def __init__(self, **kwargs):
     """Initialize internal messages state.
     Args:
@@ -204,9 +204,9 @@ class Message(six.with_metaclass(_MessageClass, object)):
 
     assigned = set()
     for name, value in kwargs.items():
+
       setattr(self, name, value)
       assigned.add(name)
-
     # initialize repeated fields.
     for f in self.all_fields():
       if f.repeated and f.name not in assigned:
@@ -360,6 +360,7 @@ class Message(six.with_metaclass(_MessageClass, object)):
     Raises:
       AttributeError when trying to assign value that is not a field.
     """
+
     if name in self.__by_name or name.startswith('_Message__'):
       object.__setattr__(self, name, value)
     else:
@@ -815,3 +816,9 @@ def find_definition(name, relative_to=None, importer=__import__):
               relative_to.__module__, '', '', [last_module_name])
           else:
             relative_to = parent
+
+
+# Dummy Message
+class Lot(Message):
+  price = IntegerField(1, required=True)
+  desc = StringField(2)
