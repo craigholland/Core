@@ -819,6 +819,30 @@ def find_definition(name, relative_to=None, importer=__import__):
 
 
 # Dummy Message
+class TradeType(Enum):
+  BUY = 1
+  SELL = 2
+  SHORT = 3
+  CALL = 4
+
 class Lot(Message):
   price = IntegerField(1, required=True)
-  desc = StringField(2)
+  quantity = IntegerField(2, required=True)
+
+class Order(Message):
+  symbol = StringField(1, required=True)
+  total_quantity = IntegerField(2, required=True)
+  trade_type = EnumField(TradeType, 3, required=True)
+  lots = MessageField(Lot, 4, repeated=True)
+  limit = IntegerField(5)
+
+# order = Order(symbol='GOOG',
+#               total_quantity=10,
+#               trade_type=TradeType.BUY)
+# lot1 = Lot(price=304,
+#            quantity=7)
+# lot2 = Lot(price = 305,
+#            quantity=3)
+# order.lots = [lot1, lot2]
+# # Now object is initialized!
+# order.check_initialized()

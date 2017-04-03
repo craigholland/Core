@@ -480,6 +480,7 @@ class StringField(Field):
                                                               err))
           validation_field_name = self.name
         raise validation_error
+      return value
     else:
       return super(StringField, self).validate_element(value)
 
