@@ -2,7 +2,7 @@ import six
 
 import core.core_constants as constants
 import core.core_utils as util
-from core.core_error import *
+from core.errors.core_error import *
 from core.base.core_enum import *
 
 __all__ =['FieldList', 'Field', '_FieldMeta',

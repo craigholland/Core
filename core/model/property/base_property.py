@@ -1,6 +1,6 @@
 from core.model.core_model_utils import *
 from core import core_utils as utils
-from core.core_error import *
+from core.errors.core_error import *
 from core.model.property.property_errors import *
 
 class Property(ModelAttribute):

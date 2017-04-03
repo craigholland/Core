@@ -2,7 +2,7 @@
 import six
 
 import core.core_constants as constants
-import core.core_error as error
+import core.errors.core_error as error
 import core.base.meta.core_definition as definition
 
 __all__ = ['_EnumClass', 'Enum', 'Variant', 'defaultValue']

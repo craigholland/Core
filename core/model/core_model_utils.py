@@ -1,7 +1,8 @@
 import collections
 import sys
+
 from core import core_utils
-from core.core_error import *
+from core.errors.core_error import *
 
 
 class _NotEqualMixin(object):

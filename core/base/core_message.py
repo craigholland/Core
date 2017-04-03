@@ -28,7 +28,7 @@ import weakref
 
 from core.base.core_field import *
 from core.base.core_enum import *
-from core.core_error import *
+from core.errors.core_error import *
 from core.base.meta.core_definition import *
 import core.core_constants as constants
 import core.core_utils as util

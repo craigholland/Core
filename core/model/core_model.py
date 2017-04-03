@@ -283,11 +283,9 @@ subclassed to suit various needs.  Documentation for writing a
 Property subclass is in the docstring for the Property class.
 """
 
-import core.core_utils as utils
-from core.model.core_model_utils import *
 from core.model.property.base_property import *
 from core.model.core_model_utils import *
-from core.core_error import *
+from core.errors.core_error import *
 #
 # from .google_imports import datastore_errors
 # from .google_imports import datastore_types

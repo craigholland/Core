@@ -72,7 +72,8 @@ import base64
 import os
 
 from core import core_utils as utils
-from core.core_error import *
+from core.errors.core_error import *
+
 __all__ = ['Key']
 
 _MAX_LONG = 2L ** 63  # Use 2L, see issue 65.  http://goo.gl/ELczz

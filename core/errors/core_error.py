@@ -1,6 +1,7 @@
-import core_utils
 
-Error = core_utils.Error
+
+class Error(Exception):
+  """Base class for exceptions."""
 
 
 class EnumDefinitionError(Error):
