@@ -1,7 +1,7 @@
 """Methods and Classes providing functionality for Builder mechanism."""
 import collections
+
 from core_utils import constants
-from core_utils import log_util
 
 """
 Builder() is a utility that builds an "object-oriented" dictionary.  Rather than

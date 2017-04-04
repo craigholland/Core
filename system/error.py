@@ -1,12 +1,5 @@
 """System-level error-handling and logging."""
 
-import os
-
-from core_utils import constants
-from core_utils import log_util
-
-
-
 _COMMON_ERROR_TYPES = frozenset(
     ['AttributeError',
      'TypeError',

@@ -4,6 +4,7 @@ import core.core_constants as constants
 import core.core_utils as util
 from core.errors.core_error import *
 from core.base.core_enum import *
+from core.utils import validation_util
 
 __all__ =['FieldList', 'Field', '_FieldMeta',
           'IntegerField', 'FloatField', 'BooleanField',
@@ -484,5 +485,31 @@ class StringField(Field):
     else:
       return super(StringField, self).validate_element(value)
 
+
+class EmailField(Field):
+  """Field definition for email address values."""
+  VARIANTS = frozenset([Variant.STRING])
+
+  DEFAULT_VARIANT = Variant.STRING
+
+  type = six.text_type
+
+  def validate_element(self, value):
+
+    if super(EmailField, self).validate_element(value):
+      valid_uname, valid_domain = validation_util.valid_email(value)
+      if not (valid_uname and valid_domain):
+        if isinstance(valid_domain, int):
+          val_error = ValidationError(
+            'Field encountered improperly formatted email address -- '
+            'too many @ symbols: %s' % value)
+        else:
+          val_error = ValidationError(
+            'Field encountered email address with illegal '
+            'characters: %s' % value)
+
+        raise val_error
+      else:
+        return value
 
 

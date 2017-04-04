@@ -1,16 +1,17 @@
 """Basic Logging class and utilities."""
 
-import enum
 import logging
 
+
+from core.base.core_enum import Enum
 from errors import err_msg
 from core_utils import constants
-from core_utils import datetime_util
-from core_utils import file_util
-from core_utils import user_util
+from core.utils import datetime_util
+from core.utils import file_util
+from core.utils import user_util
 
 
-class LogTypes(enum.Enum):
+class LogTypes(Enum):
   NOTSET=0
   DEBUG=1
   INFO=2
