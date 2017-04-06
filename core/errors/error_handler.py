@@ -4,6 +4,11 @@ import collections
 import json
 import pprint
 
+from core.errors import err_msg
+"""
+BASE_KEY: Root class object
+LOCAL_KEY: Error-specific category
+"""
 
 class Errors(object):
 
@@ -11,7 +16,12 @@ class Errors(object):
 
   DEFAULT_FMT = '\n'.join
 
-  def __init__(self):
+  def __init__(self, base_key=None):
+    self.Error_Obj_errors = None  # Error-object error handler
+    if base_key != err_msg.BaseKey.Errors:
+      self.Error_Obj_errors = Errors(err_msg.BaseKey.Errors)
+
+    base_key = base_key if base_key else
     self._errors = collections.defaultdict(list)
     self._contexts = set()
 
@@ -107,3 +117,12 @@ class Errors(object):
     if self:
       logging_func(self.AsJson())
 
+  def valid_basekey(self, key):
+    if key in err_msg.BaseKey:
+      return key
+    elif key in [x.name for x in err_msg.BaseKey]:
+      return err_msg.BaseKey[key]
+    elif self.Error_Obj_errors:
+      self.Error_Obj_errors.Add(err_msg.VALIDATION,
+                                err_msg.VALIDATION.ILLEGAL_BASEKEY,
+                                key)

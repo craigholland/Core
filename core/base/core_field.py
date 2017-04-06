@@ -246,6 +246,8 @@ class Field(object):
     Raises:
       ValidationError if value is not expected type.
     """
+
+    print 'value: {0}; type: {1}'.format(value, self.type)
     if not isinstance(value, self.type):
       # Authorize in values as float
       if isinstance(value, six.integer_types) and self.type == float:
@@ -486,27 +488,28 @@ class StringField(Field):
       return super(StringField, self).validate_element(value)
 
 
-class EmailField(Field):
+class EmailField(StringField):
   """Field definition for email address values."""
-  VARIANTS = frozenset([Variant.STRING])
 
-  DEFAULT_VARIANT = Variant.STRING
-
-  type = six.text_type
 
   def validate_element(self, value):
-
+    print 'First: type: {0}'.format(self.type)
+    """Validates field value as first a string, then a valid email address."""
     if super(EmailField, self).validate_element(value):
       valid_uname, valid_domain = validation_util.valid_email(value)
       if not (valid_uname and valid_domain):
         if isinstance(valid_domain, int):
           val_error = ValidationError(
-            'Field encountered improperly formatted email address -- '
-            'too many @ symbols: %s' % value)
+            'Field encountered improperly formatted email address: %s' % value)
         else:
-          val_error = ValidationError(
-            'Field encountered email address with illegal '
-            'characters: %s' % value)
+          if '@' not in value:
+            val_error = ValidationError(
+            'Field encountered email address with missing @ '
+            'character: %s' % value)
+          else:
+            val_error = ValidationError(
+              'Field encountered email address with illegal '
+              'characters: %s' % value)
 
         raise val_error
       else:

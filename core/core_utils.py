@@ -231,6 +231,14 @@ def typename(obj):
   else:
     return type(obj).__name__
 
+def convertAllCaps(value):
+  """Converts ALLCAPS_MESSAGE to Allcaps_Message"""
+  return ''.join([x.upper() if (i==0 or (value[i-1]=='_' and i-1 >=0))
+                  else x.lower() for i, x in enumerate(value)])
+
+def createType(name, bases=(object,), dct={}, convert_case=True):
+  name = convertAllCaps(name) if convert_case else name
+  return type(name, bases, dct)
 """ TEMP COMMENTED -- NOT NEEDED RIGHT AWAY ---"""
 # import cgi
 # __all__ = ['AcceptItem',
