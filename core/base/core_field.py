@@ -247,7 +247,6 @@ class Field(object):
       ValidationError if value is not expected type.
     """
 
-    print 'value: {0}; type: {1}'.format(value, self.type)
     if not isinstance(value, self.type):
       # Authorize in values as float
       if isinstance(value, six.integer_types) and self.type == float:

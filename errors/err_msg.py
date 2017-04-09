@@ -1,7 +1,7 @@
 """Log Messages and Error Keys/Messages."""
-import collections
 import enum
-from core_utils import constants
+
+from core._system import constants
 
 """
 Log Messages

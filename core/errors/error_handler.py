@@ -4,11 +4,106 @@ import collections
 import json
 import pprint
 
-from core.errors import err_msg
+from core.utils import file_util
+from core._system.constants import *
+
 """
 BASE_KEY: Root class object
 LOCAL_KEY: Error-specific category
+MESSAGE_KEY: Abbr. Error Description
 """
+
+
+class ErrorMsgManager(object):
+  """Collects and organizes error messages into object structure.
+  Crawls through errors.err_msg directory and imports each file
+  as a base_key.
+  
+  Each All-Cap property in each file is imported as a local_key
+    
+  Usage:
+  mgr = ErrorMsgManager()
+  >>> mgr
+  ErrorMsgManager<keys: BASE1, BASE2, BASE3>
+  >>> mgr.as_list
+  ['BASE1', 'BASE2', 'BASE3']
+  >>> mgr.BASE1
+  BASE1<keys: LOCAL1, LOCAL2, LOCAL3>
+  >>> mgr.BASE1.as_list
+  ['LOCAL1', 'LOCAL2', 'LOCAL3']
+  >>> mgr.BASE1.LOCAL2
+  LOCAL2<keys: MSGKEY1, MSGKEY2>
+  >>> mgr.BASE1.LOCAL2.MSGKEY1
+  This message has no args'
+  >>> mgr.BASE1.LOCAL2.MSGKEY1.argcount
+  0
+  >>> mgr.BASE1.LOCAL2.MSGKEY2
+  This message has one arg: %s
+  >>> mgr.BASE1.LOCAL2.MSGKEY1.argcount
+  1
+  
+  """
+  def _repr_(self, title, keys):
+    return '{0}<keys: {1}>'.format(title, (', '.join(keys)))
+
+  def _dummy_object(cls, desc, location, title, keys):
+
+    if desc and location:
+      class dummy(object):
+        def __init__(self, **kwargs):
+          for k, v in kwargs.iteritems():
+            setattr(self, k, v)
+        def __repr__(self):
+          return cls._repr_(title, keys)
+        @property
+        def as_list(self):
+          return keys
+      return dummy(desc=desc, location=location)
+
+    else:
+      class dummy(object):
+        def __init__(self, location, msg):
+          self._location = location
+          self.message = msg
+          self.argcount = msg.count('%s')
+        def __repr__(self):
+          return self._location
+      return dummy(location, title)
+
+  def __init__(self):
+    location = file_util.SitRep(__file__)
+    msg_path = location.rel_thisdir+'/err_msg'
+    self.as_list = file_util.searchDirectory(msg_path)
+
+    self.base = __import__(msg_path.replace('/', '.'),
+                           fromlist=self.as_list)
+    for base_key in self.as_list:
+      # Import base_key data
+      base_data = getattr(self.base, base_key)
+      desc, loc = base_data.__doc__, base_data.LOCATION
+      local_keys = [x for x in dir(base_data) if not x.startswith('_') and
+                    x == x.upper() and x.lower() != 'location']
+
+      setattr(self, base_key.upper(),
+              self._dummy_object(desc, location, base_key.upper(), local_keys))
+      basekey_obj = getattr(self, base_key.upper())
+      for local_key in local_keys:
+        local_key_data = getattr(base_data, local_key)
+        desc, loc = local_key_data.desc, local_key_data.location
+        message_keys = [x.key for x in local_key_data.messages]
+        setattr(basekey_obj, local_key,
+                self._dummy_object(desc, loc, local_key, message_keys))
+        localkey_obj = getattr(basekey_obj, local_key)
+        for message in local_key_data.messages:
+          location = '.'.join([base_key.upper(), local_key, message.key])
+          setattr(localkey_obj, message.key,
+                  self._dummy_object(None, location, message.value, None))
+    self.as_list = [x.upper() for x in self.as_list]
+
+  def __repr__(self):
+    return self._repr_('ErrorMsgManager', self.as_list)
+ErrMsg = ErrorMsgManager()
+
 
 class Errors(object):
 
@@ -16,13 +111,9 @@ class Errors(object):
 
   DEFAULT_FMT = '\n'.join
 
-  def __init__(self, base_key=None):
-    self.Error_Obj_errors = None  # Error-object error handler
-    if base_key != err_msg.BaseKey.Errors:
-      self.Error_Obj_errors = Errors(err_msg.BaseKey.Errors)
-
-    base_key = base_key if base_key else
-    self._errors = collections.defaultdict(list)
+  def __init__(self):
+    _locals = collections.defaultdict(list)
+    self._errors = collections.defaultdict(type(_locals))
     self._contexts = set()
 
   def __nonzero__(self):
@@ -117,12 +208,3 @@ class Errors(object):
     if self:
       logging_func(self.AsJson())
 
-  def valid_basekey(self, key):
-    if key in err_msg.BaseKey:
-      return key
-    elif key in [x.name for x in err_msg.BaseKey]:
-      return err_msg.BaseKey[key]
-    elif self.Error_Obj_errors:
-      self.Error_Obj_errors.Add(err_msg.VALIDATION,
-                                err_msg.VALIDATION.ILLEGAL_BASEKEY,
-                                key)

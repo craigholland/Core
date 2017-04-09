@@ -1,7 +1,8 @@
 """Datetime utilities."""
-import re
 import datetime as dt
-from core_utils import constants
+import re
+
+from core._system import constants
 
 _TIME_ZONE_RE_STRING = r"""
   # Examples:

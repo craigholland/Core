@@ -1,7 +1,48 @@
-import os, sys
+import os
+import inspect
+from core._system import constants
 
-from core_utils import constants
-from errors import err_msg
+
+def detectROOT(path):
+  """Detects if path input is absolute."""
+  return constants.ROOT_PATH in path
+
+
+def convertPathToLocal(path):
+  """Receives a Path and if absolute, convert to Local"""
+  if detectROOT(path):
+    return path.replace(constants.ROOT_PATH, '')
+  return path
+
+def currPath():
+  return os.path.dirname(os.path.abspath(inspect.stack()[0][1]))
+
+def searchDirectory(path, ext=None, show_ext=False):
+  """Returns all filenames in a directory.
+
+  Args:
+      path: str, path of directory to be searched.
+      ext: str, only return files of this file type extension.
+  Returns:
+      mod_list: list, list of filenames found in path.
+  """
+
+  if constants.ROOT_PATH not in path:
+    path = constants.ROOT_PATH+'/'+path
+  try:
+    files = [f for f in os.listdir(path) if not f.startswith('__')]
+  except Exception, e:
+    print 'error', e
+    return []
+
+  if ext:
+    files = [f for f in files if f.endswith(ext)]
+
+  if not show_ext:
+    files = [f.split('.')[0] for f in files]
+
+  return list(set(files))
+
 
 class File(object):
   """Basic File Object class."""
@@ -9,7 +50,7 @@ class File(object):
   def __init__(self, path, filename):
     self.path_exists = False
     self.file_exists = False
-    self.path = constants.ROOT_PATH + '/' + self._convertPathToLocal(path)
+    self.path = constants.ROOT_PATH + '/' + convertPathToLocal(path)
     self.file = filename
     self._permissions = {
       'append': False,
@@ -38,15 +79,7 @@ class File(object):
     elif self._create and self._permissions['create']:
       return open(path, 'w+b')
 
-  def _detectROOT(self, path):
-    """Detects if path input is absolute."""
-    return constants.ROOT_PATH in path
 
-  def _convertPathToLocal(self, path):
-    """Receives a Path and if absolute, convert to Local"""
-    if self._detectROOT(path):
-      return path.replace(constants.ROOT_PATH, '')
-    return path
 
   def enableAllPermissions(self, set_value=True):
     for k, v in self._permissions.iteritems():
@@ -141,6 +174,13 @@ class File(object):
       self.file_exists = True
       self._create = False
 
+class SitRep(object):
+  def __init__(self, f):
+    self.root = os.getcwd()
+    self.rel_path = f
+    self.full_path = os.path.realpath(f)
+    self.thisdir = os.path.dirname(self.full_path)
+    self.rel_thisdir = self.thisdir.replace(self.root+'/', '')
 
 
 
