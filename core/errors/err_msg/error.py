@@ -1,4 +1,6 @@
-"""Error categories and messages specific to the Error Object."""
+"""Error categories and messages specific to the Error Object.
+Read doc_string of error_handler.ErrorMsgManager for more information.
+"""
 from core.errors.err_msg_utils import *
 
 
@@ -10,6 +12,7 @@ GENERIC = localkey('GENERIC',
                    [])
 
 GENERIC.messages = [
+    errmsg('GENERICKEY', 'This key not to be used in messaging.'),
     errmsg('UNKNOWN_ERRORKEY', 'Encountered unexpected key: %s'),
     errmsg('TEMPKEY', 'Generic Error Message')
 ]

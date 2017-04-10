@@ -12,24 +12,30 @@ BASE_KEY: Root class object
 LOCAL_KEY: Error-specific category
 MESSAGE_KEY: Abbr. Error Description
 """
+MessageKeyType = None  # Dynamically set by ErrorMsgManager._keyGen()
 
+def _str_(title, keys=None):
+  if keys:
+    return '{0}<keys: {1}>'.format(title, (', '.join(keys)))
+  else:
+    return title
 
 class ErrorMsgManager(object):
   """Collects and organizes error messages into object structure.
   Crawls through errors.err_msg directory and imports each file
   as a base_key.
   
-  Each All-Cap property in each file is imported as a local_key
+  Each All-Cap property in each file is imported as a local_key (sub category)
     
   Usage:
   mgr = ErrorMsgManager()
   >>> mgr
   ErrorMsgManager<keys: BASE1, BASE2, BASE3>
-  >>> mgr.as_list
+  >>> mgr.keys
   ['BASE1', 'BASE2', 'BASE3']
   >>> mgr.BASE1
   BASE1<keys: LOCAL1, LOCAL2, LOCAL3>
-  >>> mgr.BASE1.as_list
+  >>> mgr.BASE1.keys
   ['LOCAL1', 'LOCAL2', 'LOCAL3']
   >>> mgr.BASE1.LOCAL2
   LOCAL2<keys: MSGKEY1, MSGKEY2>
@@ -41,42 +47,62 @@ class ErrorMsgManager(object):
   This message has one arg: %s
   >>> mgr.BASE1.LOCAL2.MSGKEY1.argcount
   1
-  
+  >>> type(mgr.BASE1.LOCAL2.MSGKEY1)
+  <class 'core.errors.error_handler.MessageKey'>
+  >>> type(mgr.BASE1.LOCAL2)
+  <class 'core.errors.error_handler.LocalKey'>
+  >>> type(mgr.BASE1)
+  <class 'core.errors.error_handler.BaseKey'>
+  >>> type(mgr)
+  <class 'core.errors.error_handler.ErrorMsgManager'>
   """
-  def _repr_(self, title, keys):
-    return '{0}<keys: {1}>'.format(title, (', '.join(keys)))
 
-  def _dummy_object(cls, desc, location, title, keys):
+  class ErrorKey(object):
+    """Base Key object used to create BaseKey, LocalKey, and MessageKey objects."""
 
-    if desc and location:
-      class dummy(object):
+    def __init__(self, **kwargs):
+      for k, v in kwargs.iteritems():
+        setattr(self, k, v)
+    def __str__(self):
+      if hasattr(self, 'name') and hasattr(self, 'keys'):
+        return _str_(self.name, self.keys)
+      elif hasattr(self, '_location'):
+        return _str_(self._location)
+      else:
+        return str(self)
+
+  def _keyGen(self, key_type, desc, path, name=None, keys=None):
+    if key_type == 'Base':
+      class BaseKey(self.ErrorKey):
+        pass
+      return BaseKey(desc=desc, path=path, name=name, keys=keys)
+
+    elif key_type =='Local':
+      class LocalKey(self.ErrorKey):
+        pass
+      return LocalKey(desc=desc, path=path, name=name, keys=keys)
+
+    elif key_type == 'Message':
+      class MessageKey(self.ErrorKey):
         def __init__(self, **kwargs):
-          for k, v in kwargs.iteritems():
-            setattr(self, k, v)
-        def __repr__(self):
-          return cls._repr_(title, keys)
-        @property
-        def as_list(self):
-          return keys
-      return dummy(desc=desc, location=location)
-
-    else:
-      class dummy(object):
-        def __init__(self, location, msg):
-          self._location = location
-          self.message = msg
-          self.argcount = msg.count('%s')
-        def __repr__(self):
-          return self._location
-      return dummy(location, title)
+          super(MessageKey, self).__init__(**kwargs)
+          self.argcount = self.message.count('%s') if hasattr(
+            self, 'message') else 0
+      msg = MessageKey(message=desc, _location=path)
+      if not globals()['MessageKeyType']:
+        globals()['MessageKeyType'] = type(msg)
+      return msg
 
   def __init__(self):
+
+    # Read core.errors.err_msg directory; Count each file as a BaseKey
     location = file_util.SitRep(__file__)
     msg_path = location.rel_thisdir+'/err_msg'
     self.as_list = file_util.searchDirectory(msg_path)
-
     self.base = __import__(msg_path.replace('/', '.'),
                            fromlist=self.as_list)
+
+    # Iterate through each BaseKey
     for base_key in self.as_list:
       # Import base_key data
       base_data = getattr(self.base, base_key)
@@ -84,36 +110,44 @@ class ErrorMsgManager(object):
       local_keys = [x for x in dir(base_data) if not x.startswith('_') and
                     x == x.upper() and x.lower() != 'location']
 
-      setattr(self, base_key.upper(),
-              self._dummy_object(desc, location, base_key.upper(), local_keys))
-      basekey_obj = getattr(self, base_key.upper())
+      # Create BaseKey Object
+      basekey_obj = self._keyGen('Base', desc, location, base_key.upper(), local_keys)
+      setattr(self, base_key.upper(), basekey_obj)
+
+      # Iterate through each local key of the BaseKey
       for local_key in local_keys:
+        # Import local key data
         local_key_data = getattr(base_data, local_key)
         desc, loc = local_key_data.desc, local_key_data.location
         message_keys = [x.key for x in local_key_data.messages]
-        setattr(basekey_obj, local_key,
-                self._dummy_object(desc, loc, local_key, message_keys))
-        localkey_obj = getattr(basekey_obj, local_key)
+
+        # Create LocalKey Object
+        localkey_obj = self._keyGen('Local', desc, loc, local_key, message_keys)
+        setattr(basekey_obj, local_key, localkey_obj)
+
+        # Iterate through each message of the LocalKey
         for message in local_key_data.messages:
           location = '.'.join([base_key.upper(), local_key, message.key])
-          setattr(localkey_obj, message.key,
-                  self._dummy_object(None, location, message.value, None))
+
+          # Create MessageKey Object
+          msg_obj = self._keyGen('Message', message.value, location)
+          setattr(localkey_obj, message.key, msg_obj)
+
     self.as_list = [x.upper() for x in self.as_list]
 
-  def __repr__(self):
-    return self._repr_('ErrorMsgManager', self.as_list)
+  def __str__(self):
+    return _str_('ErrorMsgManager', self.as_list)
 ErrMsg = ErrorMsgManager()
 
-
 class Errors(object):
-
-  DEFAULT_KEY = '__generic__'
+  _DEFAULT_BASEKEY = 'ERROR'
+  _DEFAULT_LOCALKEY = 'GENERIC'
+  _DEFAULT_MSGKEY = 'GENERICKEY'
 
   DEFAULT_FMT = '\n'.join
 
   def __init__(self):
-    _locals = collections.defaultdict(list)
-    self._errors = collections.defaultdict(type(_locals))
+    self._errors = collections.defaultdict(list)
     self._contexts = set()
 
   def __nonzero__(self):
@@ -130,6 +164,18 @@ class Errors(object):
 
   def __repr__(self):
     return '<Errors: %s>' % pprint.pformat(dict(self._errors))
+
+  def _validateKey(self, key):
+    if type(key) == MessageKeyType:
+      self.basekey, self.localkey, self.msgkey = str(key).split('.')
+      self.message, self.argcount = key.message, key.argcount
+      return True
+    else:
+      key = ErrorMsgManager()
+      for sub_key in [self._DEFAULT_BASEKEY, self._DEFAULT_LOCALKEY, self._DEFAULT_MSGKEY]:
+        key = getattr(key, sub_key)
+        self._validateKey(key)
+      return False
 
   def Clear(self):
     self._errors.clear()
@@ -155,7 +201,7 @@ class Errors(object):
     """Gets a copy of the internal errors dictionary."""
     return self._errors.copy()
 
-  def Add(self, key, message, *messages):
+  def Add(self, key, *messages):
     """Associates one or more messages with a given key_bk.
 
     Args:
@@ -164,10 +210,17 @@ class Errors(object):
       message: str, the message to associate with the key_bk.
       *messages: additional messages to associate with the key_bk.
     """
-    if not key:
-      key = self.DEFAULT_KEY
-    messages = map(str, (message,) + messages)
-    self._errors[key].extend(messages)
+    if self._validateKey(key):
+
+      print 'adding key'
+
+      # messages = map(str, (message,) + messages)
+      # self._errors[key].extend(messages)
+    else:
+      print 'error - bad key'
+
+    print 'Base: {0}; Local: {1}; Msg: {2}'.format(self.basekey, self.localkey, self.msgkey)
+    print 'Message: {0} (Argcount: {1})'.format(self.message, self.argcount)
 
   def AsJson(self, format_func=DEFAULT_FMT):
     """Gets a JSON string representation of the error object.
@@ -208,3 +261,4 @@ class Errors(object):
     if self:
       logging_func(self.AsJson())
 
+__all__ = ['ErrorMsgManager', 'ErrMsg', 'Errors', 'MessageKey']
