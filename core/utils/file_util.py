@@ -26,9 +26,10 @@ def searchDirectory(path, ext=None, show_ext=False):
   Returns:
       mod_list: list, list of filenames found in path.
   """
-
-  if constants.ROOT_PATH not in path:
-    path = constants.ROOT_PATH+'/'+path
+  root = constants.ROOT_PATH
+  path = path.replace('.','/')
+  if root not in path:
+    path = '/'.join([root, path])
   try:
     files = [f for f in os.listdir(path) if not f.startswith('__')]
   except Exception, e:

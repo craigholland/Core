@@ -7,7 +7,8 @@ import inspect
 import sys
 
 IMPORTER = importlib.import_module
-
+CRITICALFAIL_MSG = ('CRITICAL FAILURE!!! MISSING SYSTEM.PY FILE IN "core.errors.err_msg"\n'
+                    'Exiting...')
 ROOT_PATH = os.path.abspath('.').replace('\\', '/')
 ERROR_PATH = ROOT_PATH + '/errors'
 DATA_PATH = ROOT_PATH + '/data'
@@ -17,3 +18,5 @@ LOCAL_TIMEZONE = tz.tzlocal()
 UTC_TIMEZONE = tz.tzutc()
 LOCAL_TIMEZONE_STR = datetime.datetime.now(tz.tzlocal()).tzname()
 
+ERRORKEY_DEFAULTKEYS = ('basekey', 'localkey', 'msgkey')
+ERRORKEY_SYSTEM_DEFAULTKEYS = ('SYSTEM', 'GENERIC', 'DEFAULTMSG')
