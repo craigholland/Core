@@ -19,4 +19,4 @@ UTC_TIMEZONE = tz.tzutc()
 LOCAL_TIMEZONE_STR = datetime.datetime.now(tz.tzlocal()).tzname()
 
 ERRORKEY_DEFAULTKEYS = ('basekey', 'localkey', 'msgkey')
-ERRORKEY_SYSTEM_DEFAULTKEYS = ('SYSTEM', 'GENERIC', 'DEFAULTMSG')
+ERRORKEY_SYSTEM_DEFAULTKEYS = ('System', 'Generic', 'Defaultmsg')

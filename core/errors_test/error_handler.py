@@ -25,11 +25,14 @@ MESSAGE_KEY: Abbr. Error Description
 
 _ERRMSG_LOCATION = '/err_msg'
 
-def _repr_(title, keys=None):
-  if keys:
-    return '{0}<keys: {1}>'.format(title, (', '.join(keys)))
-  else:
-    return title
+def _repr_(slf):
+  title = 'ErrorMsgManager'
+  keys = []
+  key_list = slf._keys if hasattr(slf, '_keys') else None
+  if key_list:
+    for key in key_list:
+      keys.append(key)
+  return '<{0} (keys: {1})>'.format(title, ', '.join(keys))
 
 class ErrorMsgManager(object):
   """Collects and organizes error messages into object structure.
@@ -74,42 +77,38 @@ class ErrorMsgManager(object):
   """
 
   def __repr__(self):
-    title = 'ErrorMsgManager'
-    comps = []
-    if self._comps:
-      for comp in self._comps:
-        comps.append(comp)
-    return '{0}<keys: {1}>'.format(title, '.'.join(comps))
+    return _repr_(self)
 
 
-  def _import_basekey(self, page_module, basekey_filename):
+  def _import_basekey(self, page_module, basekey):
     """Imports err_msg/<all files> as BaseKey objects.
     
     Args:
         page_module: __import__ module of core.errors.err_msg
-        basekey_filename: str, name of target file.
+        basekey: str, name of target file.
         
     Returns:
         basekey_obj: obj, New BaseKey object.
         lcl_keys: list, List of name/LocalKey Message pairs.
     """
 
-    basepage_obj = getattr(page_module, basekey_filename)
-    basekey = basekey_filename.capitalize()
+    basepage_obj = getattr(page_module, basekey.lower())
     base_dict = error_handler_utils._getErrmsgData(basepage_obj)
+
     attr, lcl_keys = base_dict['attributes'], base_dict['local_keys']
 
     # Create BaseKey Object and its attributes
     basekey_dict = dict((k, v) for k, v in [x for x in attr])
     basekey_dict['_comps'] = [basekey]
+
     basekey_dict['_keys'] = [k.capitalize() for k, _ in lcl_keys] or []
     basekey_obj = type('BaseKey', (object,), basekey_dict)
 
     # set __repr__ method for basekey_obj
-    setattr(basekey_obj, '__repr__', self.__repr__)
+    setattr(basekey_obj, '__repr__', _repr_)
 
     # Assign BaseKey object to ErrMsg (self)
-    setattr(self, basekey, basekey_obj)
+    setattr(self, basekey, basekey_obj())
 
     return basekey_obj, lcl_keys
 
@@ -137,10 +136,10 @@ class ErrorMsgManager(object):
     localkey_obj = type('LocalKey', (object,), local_dict)
 
     # set __repr__ method for localkey_obj
-    setattr(localkey_obj, '__repr__', self.__repr__)
+    setattr(localkey_obj, '__repr__', _repr_)
 
     # Assign LocalKey object to BaseKey.
-    setattr(basekey_obj, lclkey_name.capitalize(), localkey_obj)
+    setattr(basekey_obj, lclkey_name.capitalize(), localkey_obj())
 
     return localkey_obj, msgkey_list
 
@@ -160,28 +159,29 @@ class ErrorMsgManager(object):
     msgkey_obj = type('MessageKey', (object,), msg_dict)
 
     # set __repr__ method for msgkey_obj
-    setattr(msgkey_obj, '__repr__', self.__repr__)
+    setattr(msgkey_obj, '__repr__', _repr_)
 
     # Assign it to LocalKey.
-    setattr(local_obj, msgkey.capitalize(), msgkey_obj)
+    setattr(local_obj, msgkey.capitalize(), msgkey_obj())
 
 
   def __init__(self):
     # Determine relative path to ERRMSG directory
+
     location = file_util.SitRep(__file__)
     msg_path = (location.rel_thisdir + _ERRMSG_LOCATION).replace('/', '.')
 
     # Read ERRMSG directory; Count each file as a BaseKey
-    basekey_list = file_util.searchDirectory(msg_path)  # List of file names in /err_msg folder
-    self._keys = [x.capitalize() for x in basekey_list]
-    errmsg_mod = __import__(msg_path, fromlist=basekey_list)  #import module: core.errors.err_msg
+    self._keys = [x.capitalize() for x in file_util.searchDirectory(msg_path)]  # List of file names in /err_msg folder
+    errmsg_mod = __import__(msg_path, fromlist=[x.lower() for x in self._keys])  #import module: core.errors.err_msg
 
     # Ensure 'system.py' file is there.
-    system_check = ERRORKEY_SYSTEM_DEFAULTKEYS[0] in [x.upper() for x in basekey_list]
+    system_check = ERRORKEY_SYSTEM_DEFAULTKEYS[0].lower() in [x.lower() for x in self._keys]
     if system_check:
       # Iterate through each file
-      for basekey in basekey_list:
+      for basekey in self._keys:
         self._comps = None  # Keeps track of Basekey, LocalKey, MsgKey components.
+
         basekey_obj, localkey_list = self._import_basekey(errmsg_mod, basekey)
 
         # If Default Local not in localkey_list, append a default LocalKey

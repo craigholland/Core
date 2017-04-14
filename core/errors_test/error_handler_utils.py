@@ -15,12 +15,13 @@ def _getErrmsgData(page):
         'attributes': []
     }
 
+
     # Parse ErrMsg page
     for prop in [x for x in dir(page) if not x.startswith('_')]:
         prop_val, key = [prop, getattr(page, prop)], None  # Prop: (Name, Value)
 
         # Filter prop values
-        if isinstance(prop, LocalKey):  # Interpret as a LocalKey
+        if isinstance(prop_val[1], LocalKey):  # Interpret as a LocalKey Message
             key = 'local_keys'
             prop_val[0] = prop_val[0].capitalize()
         elif prop == prop.upper():  # Interpret as a BaseKey Property
@@ -34,6 +35,7 @@ def _getErrmsgData(page):
 
     if 'location' not in data_dict.keys():
         data_dict['location'] = '(Not Available)'
+
     return data_dict
 
 def _check_LocalKeyDefault(base_obj, local_list):
@@ -48,14 +50,16 @@ def _check_LocalKeyDefault(base_obj, local_list):
             messages=[default_msg]
         )
         local_list.append((ERRORKEY_SYSTEM_DEFAULTKEYS[1], local_msg))
+        base_obj._keys.append(ERRORKEY_SYSTEM_DEFAULTKEYS[1])
     return local_list
 
 def _check_MsgKeyDefault(local_obj, msg_list):
 
     """Ensures a Default MessageKey is added to LocalKey objects."""
     if ERRORKEY_SYSTEM_DEFAULTKEYS[2] not in [x.key for x in msg_list]:
-        default_msg = errmsg(ERRORKEY_SYSTEM_DEFAULTKEYS[1],
+        default_msg = errmsg(ERRORKEY_SYSTEM_DEFAULTKEYS[2],
                              'General error in {0} object'.format(
                                  local_obj._comps[0].capitalize()))
         msg_list.append(default_msg)
+        local_obj._keys.append(ERRORKEY_SYSTEM_DEFAULTKEYS[2])
     return msg_list
