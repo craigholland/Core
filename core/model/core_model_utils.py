@@ -2,7 +2,7 @@ import collections
 import sys
 
 from core import core_utils
-from core.errors.core_error import *
+from core.errors_old.core_error import *
 
 
 class _NotEqualMixin(object):

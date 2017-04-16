@@ -17,9 +17,11 @@ class ErrMsg(Message):
   value = StringField(2)
 
 class LocalKey(Message):
+  key = StringField(1, required=True)
   desc = StringField(2)
   location = StringField(3)
   messages = MessageField(ErrMsg, 4, repeated=True)
+
 
 def errmsg(key, value):
   return ErrMsg(key=key, value=value)
@@ -28,4 +30,4 @@ def errmsg(key, value):
 def localkey(key, desc=None, location=None, messages=None):
   return LocalKey(key=key, desc=desc, location=location, messages=messages)
 
-__all__ = ['localkey', 'errmsg', 'LocalKey', 'ErrMsg']
+__all__ = ['localkey', 'errmsg']

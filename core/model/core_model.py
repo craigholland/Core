@@ -285,7 +285,7 @@ Property subclass is in the docstring for the Property class.
 
 from core.model.property.base_property import *
 from core.model.core_model_utils import *
-from core.errors.core_error import *
+from core.errors_old.core_error import *
 #
 # from .google_imports import datastore_errors
 # from .google_imports import datastore_types

@@ -72,7 +72,7 @@ import base64
 import os
 
 from core import core_utils as utils
-from core.errors.core_error import *
+from core.errors_old.core_error import *
 
 __all__ = ['Key']
 

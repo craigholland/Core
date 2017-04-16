@@ -7,8 +7,7 @@ import pprint
 
 from core.utils import file_util
 from core._system.constants import *
-from core.errors_test.err_msg_utils import LocalKey, errmsg
-from core.errors_test import error_handler_utils
+from core.errors_old.err_msg_utils import errmsg
 
 __all__ = [
   #  Error-related classes/instances
@@ -23,20 +22,16 @@ LOCAL_KEY: Error-specific category
 MESSAGE_KEY: Abbr. Error Description
 """
 
-_ERRMSG_LOCATION = '/err_msg'
 
-def _repr_(slf):
-  title = 'ErrorMsgManager'
-  keys = []
-  key_list = slf._keys if hasattr(slf, '_keys') else None
-  if key_list:
-    for key in key_list:
-      keys.append(key)
-  return '<{0} (keys: {1})>'.format(title, ', '.join(keys))
+def _repr_(title, keys=None):
+  if keys:
+    return '{0}<keys: {1}>'.format(title, (', '.join(keys)))
+  else:
+    return title
 
 class ErrorMsgManager(object):
   """Collects and organizes error messages into object structure.
-  Crawls through errors.err_msg directory and imports each file
+  Crawls through errors_old.err_msg directory and imports each file
   as a base_key.
   
   Each All-Cap property in each file is imported as a local_key (sub category)
@@ -67,140 +62,128 @@ class ErrorMsgManager(object):
   >>> mgr.BASE1.LOCAL2.MSGKEY1.comps
   ['BASE1', 'LOCAL2', 'MSGKEY1']
   >>> type(mgr.BASE1.LOCAL2.MSGKEY1)
-  <class 'core.errors.error_handler.MessageKey'>
+  <class 'core.errors_old.error_handler.MessageKey'>
   >>> type(mgr.BASE1.LOCAL2)
-  <class 'core.errors.error_handler.LocalKey'>
+  <class 'core.errors_old.error_handler.LocalKey'>
   >>> type(mgr.BASE1)
-  <class 'core.errors.error_handler.BaseKey'>
+  <class 'core.errors_old.error_handler.BaseKey'>
   >>> type(mgr)
-  <class 'core.errors.error_handler.ErrorMsgManager'>
+  <class 'core.errors_old.error_handler.ErrorMsgManager'>
   """
 
-  def __repr__(self):
-    return _repr_(self)
+  class ErrorKey(object):
+    """Base Key object used to create BaseKey, LocalKey, and MessageKey objects."""
+    _DEFAULT_BASEKEY, _DEFAULT_LOCALKEY, _DEFAULT_MSGKEY = ERRORKEY_SYSTEM_DEFAULTKEYS
 
+    def __init__(self, **kwargs):
+      self._comps = None
+      for k, v in kwargs.iteritems():
+        setattr(self, k, v)
 
-  def _import_basekey(self, page_module, basekey):
-    """Imports err_msg/<all files> as BaseKey objects.
-    
-    Args:
-        page_module: __import__ module of core.errors.err_msg
-        basekey: str, name of target file.
-        
-    Returns:
-        basekey_obj: obj, New BaseKey object.
-        lcl_keys: list, List of name/LocalKey Message pairs.
-    """
+    def __repr__(self):
+      if hasattr(self, 'name') and hasattr(self, 'keys'):
+        return _repr_(self.name, self.keys)
+      elif hasattr(self, '_location'):
+        return _repr_(self._location)
+      else:
+        return str(self)
 
-    basepage_obj = getattr(page_module, basekey.lower())
-    base_dict = error_handler_utils._getErrmsgData(basepage_obj)
+    @property
+    def comps(self):
+      return self._comps
 
-    attr, lcl_keys = base_dict['attributes'], base_dict['local_keys']
+  def _keyGen(self, key_type, desc, path, name=None, keys=None):
+    if key_type == ERRORKEY_DEFAULTKEYS[0]:
+      class BaseKey(self.ErrorKey):
+        pass
+      return BaseKey(desc=desc, path=path, name=name, keys=keys)
 
-    # Create BaseKey Object and its attributes
-    basekey_dict = dict((k, v) for k, v in [x for x in attr])
-    basekey_dict['_comps'] = [basekey]
+    elif key_type == ERRORKEY_DEFAULTKEYS[1]:
+      class LocalKey(self.ErrorKey):
+        pass
+      return LocalKey(desc=desc, path=path, name=name, keys=keys)
 
-    basekey_dict['_keys'] = [k.capitalize() for k, _ in lcl_keys] or []
-    basekey_obj = type('BaseKey', (object,), basekey_dict)
-
-    # set __repr__ method for basekey_obj
-    setattr(basekey_obj, '__repr__', _repr_)
-
-    # Assign BaseKey object to ErrMsg (self)
-    setattr(self, basekey, basekey_obj())
-
-    return basekey_obj, lcl_keys
-
-  def _import_localkey(self, basekey_obj, lcl):
-    """Imports LocalKey Messages from BaseKey as LocalKey objects.
-
-      Args:
-          basekey_obj: ErrMsg.BaseKey object
-          lcl: tuple(str, LocalKey Message).
-
-      Returns:
-          localkey_obj: obj, New LocalKey object.
-          msgkey_list: list, List of MessageKey messages.
-      """
-    lclkey_name, lclmsg = lcl
-    desc, loc, msgkey_list = (lclmsg.desc, lclmsg.location, lclmsg.messages)
-
-    # Create LocalKey Object and its attributes.
-    local_dict = {
-      'description': desc,
-      'location': loc,
-      '_comps': [basekey_obj._comps[0], lclkey_name.capitalize()],
-      '_keys': [message.key.capitalize() for message in msgkey_list]
-    }
-    localkey_obj = type('LocalKey', (object,), local_dict)
-
-    # set __repr__ method for localkey_obj
-    setattr(localkey_obj, '__repr__', _repr_)
-
-    # Assign LocalKey object to BaseKey.
-    setattr(basekey_obj, lclkey_name.capitalize(), localkey_obj())
-
-    return localkey_obj, msgkey_list
-
-  def _import_messagekeys(self, local_obj, msg_obj):
-    """Imports MsgKey Messages from LocalKey as MsgKey objects.
-
-      Args:
-          local_obj: ErrMsg.BaseKey object
-          msg_obj: obj, name/LocalKey Message pairs.      
-      """
-    msgkey, message = msg_obj.key, msg_obj.value
-
-    # Create MessageKey Object and its attributes.
-    msg_dict = {'message': message,
-                'argcount': message.count('%s'),
-                '_comps': local_obj._comps + [msgkey]}
-    msgkey_obj = type('MessageKey', (object,), msg_dict)
-
-    # set __repr__ method for msgkey_obj
-    setattr(msgkey_obj, '__repr__', _repr_)
-
-    # Assign it to LocalKey.
-    setattr(local_obj, msgkey.capitalize(), msgkey_obj())
-
+    elif key_type == ERRORKEY_DEFAULTKEYS[2]:
+      class MessageKey(self.ErrorKey):
+        def __init__(self, **kwargs):
+          super(MessageKey, self).__init__(**kwargs)
+          self.argcount = self.message.count('%s') if hasattr(
+            self, 'message') else 0
+      return MessageKey(message=desc, _location=path)
 
   def __init__(self):
-    # Determine relative path to ERRMSG directory
-
+    # Read core.errors_old.err_msg directory; Count each file as a BaseKey
     location = file_util.SitRep(__file__)
-    msg_path = (location.rel_thisdir + _ERRMSG_LOCATION).replace('/', '.')
-
-    # Read ERRMSG directory; Count each file as a BaseKey
-    self._keys = [x.capitalize() for x in file_util.searchDirectory(msg_path)]  # List of file names in /err_msg folder
-    errmsg_mod = __import__(msg_path, fromlist=[x.lower() for x in self._keys])  #import module: core.errors.err_msg
+    msg_path = location.rel_thisdir+'/err_msg'
+    self.as_list = file_util.searchDirectory(msg_path)
+    self.base = __import__(msg_path.replace('/', '.'),
+                           fromlist=self.as_list)
 
     # Ensure 'system.py' file is there.
-    system_check = ERRORKEY_SYSTEM_DEFAULTKEYS[0].lower() in [x.lower() for x in self._keys]
+    system_check = ERRORKEY_SYSTEM_DEFAULTKEYS[0] in [x.upper() for x in
+                                                      self.as_list]
     if system_check:
-      # Iterate through each file
-      for basekey in self._keys:
-        self._comps = None  # Keeps track of Basekey, LocalKey, MsgKey components.
+      # Iterate through each BaseKey
+      for base_key in self.as_list:
+        # Import base_key
+        base_data = getattr(self.base, base_key)
+        desc, loc = base_data.__doc__, base_data.LOCATION
+        local_keys = [x for x in dir(base_data) if not x.startswith('_') and
+                      x == x.upper() and x.lower() != 'location']
 
-        basekey_obj, localkey_list = self._import_basekey(errmsg_mod, basekey)
+        # Add default LocalKey (if not already there)
+        if ERRORKEY_SYSTEM_DEFAULTKEYS[1] not in local_keys:
+          local_keys.append(ERRORKEY_SYSTEM_DEFAULTKEYS[1])
 
-        # If Default Local not in localkey_list, append a default LocalKey
-        localkey_list = error_handler_utils._check_LocalKeyDefault(basekey_obj, localkey_list)
+        # Create BaseKey Object
+        basekey_obj = self._keyGen(ERRORKEY_DEFAULTKEYS[0], desc, location, base_key.upper(), local_keys)
+        setattr(self, base_key.upper(), basekey_obj)
+        setattr(getattr(self, base_key.upper()), '_comps', [base_key.upper()])
 
-        # Convert LocalKey Messages to Objects:
-        for local_keymsg in localkey_list:
-          lclkey_obj, msgkey_list = self._import_localkey(basekey_obj, local_keymsg)
+        # Iterate through each local key of the BaseKey
+        for local_key in local_keys:
+          # Import local key data
+          if local_key == ERRORKEY_SYSTEM_DEFAULTKEYS[1] and not hasattr(base_data, local_key):
+            desc = 'Default local_key for {0} Object.'.format(base_key.upper())
+            # loc = previously assigned loc from base
+            messages = []
+            message_keys = []
+          else:
+            local_key_data = getattr(base_data, local_key)
+            desc, loc = local_key_data.desc, local_key_data.location
+            messages = local_key_data.messages
+            message_keys = [x.key for x in messages]
 
-          # If Default MessageKey not in msgkey_list, append a default MsgKey
-          msgkey_list = error_handler_utils._check_MsgKeyDefault(lclkey_obj, msgkey_list)
+          # Add default MessageKey (if not already there)
+          if ERRORKEY_SYSTEM_DEFAULTKEYS[2] not in message_keys:
+            message_keys.append(ERRORKEY_SYSTEM_DEFAULTKEYS[2])
+            messages.append(errmsg(key=ERRORKEY_SYSTEM_DEFAULTKEYS[2],
+                                   value='Default MessageKey for {0}.{1} base/'
+                                         'localkey'.format(base_key.upper(),
+                                                           local_key)))
 
-          # Convert MessageKey Messages to Objects:
-          for msg in msgkey_list:
-            self._import_messagekeys(lclkey_obj, msg)
+          # Create LocalKey Object
+          localkey_obj = self._keyGen(ERRORKEY_DEFAULTKEYS[1], desc, loc, local_key, message_keys)
+          setattr(basekey_obj, local_key, localkey_obj)
+          setattr(getattr(basekey_obj, local_key), '_comps', [base_key.upper(), local_key])
+
+          # Iterate through each message of the LocalKey
+          for message in messages:
+            location = '.'.join([base_key.upper(), local_key, message.key])
+
+            # Create MessageKey Object
+            msg_obj = self._keyGen(ERRORKEY_DEFAULTKEYS[2], message.value, location)
+            setattr(localkey_obj, message.key, msg_obj)
+            setattr(getattr(localkey_obj, message.key), '_comps', [base_key.upper(), local_key, message.key])
+
+      self.as_list = [x.upper() for x in self.as_list]
     else:
-      print CRITICALFAIL_MSG
+      print 'CRITICAL FAILURE!!! MISSING SYSTEM.PY FILE IN "core.errors_old.err_msg"'
+      print 'Exiting...'
       sys.exit(0)
 
+  def __repr__(self):
+    return _repr_('ErrorMsgManager', self.as_list)
 
   def _dummyMsgKey(self):
     return self._keyGen('msgkey', '', '')
@@ -284,6 +267,9 @@ class ErrorMsgManager(object):
                   keychain = self.getKeyFromString('.'.join([basekey, localkey, msgkey]))
                   all_messages[str(keychain)] = msg
       return all_messages
+
+
+
 
 ErrMsg = ErrorMsgManager()
 
@@ -397,7 +383,7 @@ class Errors(object):
     return None
 
   def GetAll(self):
-    """Gets a copy of the internal errors dictionary."""
+    """Gets a copy of the internal errors_old dictionary."""
     return self._errors.copy()
 
   def Add(self, key, *messages):
@@ -448,7 +434,7 @@ class Errors(object):
     return json.dumps(self._errors)
 
   def Merge(self, other):
-    """Adds all errors from another Errors object to this one.
+    """Adds all errors_old from another Errors object to this one.
 
     Args:
       other: an Errors instance to merge into this one.
@@ -472,11 +458,11 @@ class Errors(object):
     raise exception(self.AsJson())
 
   def RaiseIfAny(self, exception):
-    """Raises the given exception with the errors as the message, if any."""
+    """Raises the given exception with the errors_old as the message, if any."""
     if self:
       raise exception(self.AsJson())
 
   def LogIfAny(self, logging_func):
-    """Logs the errors using the given logging_func."""
+    """Logs the errors_old using the given logging_func."""
     if self:
       logging_func(self.AsJson())

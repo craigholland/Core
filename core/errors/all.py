@@ -11,7 +11,8 @@ __all__ = [
     # Imported from err_msg_utils.
     'localkey',          #  Method: returns a LocalKey Message-class instance.
     'errmsg',            #  Method: returns an ErrMsg Message-class instance.
-
+    'LocalKey',          #  Class: Message Class
+    ''
     # Imported from core_error.
     'Error',             #   Class: Base Exception Class.
     

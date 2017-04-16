@@ -5,8 +5,18 @@ import pprint
 
 from core.utils import file_util
 from core._system.constants import *
-from core.errors_test.err_msg_utils import LocalKey, errmsg
+from core.errors.err_msg_utils import LocalKey, msgkey
 
+
+def dictToInstance(_instance, _dict):
+    """Transfers the key/value pairs from the dict and assigns them as 
+    instance variables."""
+
+    [setattr(_instance, k, v) for k, v in _dict.iteritems()]
+    return _instance
+
+def createBasicClass(name, bases=(object,), dct={}):
+    return type(name, bases, dct)
 
 def _getErrmsgData(page):
     data_dict = {
@@ -14,7 +24,6 @@ def _getErrmsgData(page):
         'local_keys': [],
         'attributes': []
     }
-
 
     # Parse ErrMsg page
     for prop in [x for x in dir(page) if not x.startswith('_')]:
@@ -42,7 +51,7 @@ def _check_LocalKeyDefault(base_obj, local_list):
     """Ensures a Default LocalKey is added to BaseKey objects."""
 
     if ERRORKEY_SYSTEM_DEFAULTKEYS[1] not in [x[0] for x in local_list]:
-        default_msg = errmsg(ERRORKEY_SYSTEM_DEFAULTKEYS[0],
+        default_msg = msgkey(ERRORKEY_SYSTEM_DEFAULTKEYS[2],
                              'General error in {0} object'.format(base_obj._comps[0]))
         local_msg = LocalKey(
             desc='Default LocalKey in {0} object'.format(base_obj._comps[0]),
@@ -54,10 +63,9 @@ def _check_LocalKeyDefault(base_obj, local_list):
     return local_list
 
 def _check_MsgKeyDefault(local_obj, msg_list):
-
     """Ensures a Default MessageKey is added to LocalKey objects."""
     if ERRORKEY_SYSTEM_DEFAULTKEYS[2] not in [x.key for x in msg_list]:
-        default_msg = errmsg(ERRORKEY_SYSTEM_DEFAULTKEYS[2],
+        default_msg = msgkey(ERRORKEY_SYSTEM_DEFAULTKEYS[2],
                              'General error in {0} object'.format(
                                  local_obj._comps[0].capitalize()))
         msg_list.append(default_msg)

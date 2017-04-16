@@ -1,6 +1,6 @@
 import base64
 
-from core.errors.core_error import *
+from core.errors_old.core_error import *
 from core.core_utils import typename
 from core.model.core_model_utils import ValidateString
 

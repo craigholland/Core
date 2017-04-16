@@ -1,7 +1,7 @@
 import array
 import struct
 
-from core.errors.core_error import *
+from core.errors_old.core_error import *
 
 TYPE_DOUBLE  = 1
 TYPE_FLOAT   = 2

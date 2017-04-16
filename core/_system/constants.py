@@ -7,10 +7,10 @@ import inspect
 import sys
 
 IMPORTER = importlib.import_module
-CRITICALFAIL_MSG = ('CRITICAL FAILURE!!! MISSING SYSTEM.PY FILE IN "core.errors.err_msg"\n'
+CRITICALFAIL_MSG = ('CRITICAL FAILURE!!! MISSING SYSTEM.PY FILE IN "core.errors_old.err_msg"\n'
                     'Exiting...')
 ROOT_PATH = os.path.abspath('.').replace('\\', '/')
-ERROR_PATH = ROOT_PATH + '/errors'
+ERROR_PATH = ROOT_PATH + '/errors_old'
 DATA_PATH = ROOT_PATH + '/data'
 LOG_PATH = DATA_PATH + '/logs'
 

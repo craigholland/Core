@@ -12,22 +12,20 @@ Message, MessageField = _lateimportMessage()
 StringField, IntegerField = _lateimportField()
 
 
-class ErrMsg(Message):
+class MsgKey(Message):
   key = StringField(1, required=True)
   value = StringField(2)
 
 class LocalKey(Message):
-  key = StringField(1, required=True)
   desc = StringField(2)
   location = StringField(3)
-  messages = MessageField(ErrMsg, 4, repeated=True)
+  messages = MessageField(MsgKey, 4, repeated=True)
 
-
-def errmsg(key, value):
-  return ErrMsg(key=key, value=value)
+def msgkey(key, value):
+  return MsgKey(key=key, value=value)
 
 
 def localkey(key, desc=None, location=None, messages=None):
   return LocalKey(key=key, desc=desc, location=location, messages=messages)
 
-__all__ = ['localkey', 'errmsg']
+__all__ = ['localkey', 'msgkey', 'LocalKey', 'MsgKey']

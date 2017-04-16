@@ -1,6 +1,6 @@
-from core.errors_test.core_error import *
-from core.errors_test.error_handler import *
-from core.errors_test.err_msg_utils import *
+from core.errors_old.core_error import *
+from core.errors_old.error_handler import *
+from core.errors_old.err_msg_utils import *
 
 __all__ = [
     # Imported from error_handler.

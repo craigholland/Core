@@ -1,7 +1,7 @@
 """Property-specific errors."""
 import sys
 
-from core.errors import core_error as errors
+from core.errors_old import core_error as errors
 from core import core_utils
 
 
