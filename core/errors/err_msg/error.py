@@ -37,10 +37,10 @@ _local_location = LOCATION + '.Errors'
 """
 LocalKey Template:
 
-xx_localkey_name_xx = LocalKey(
-    desc = '',
-    location = _local_location,
-    messages = [
+xx_localkey_name_xx=LocalKey(
+    desc='',
+    location=_local_location,
+    messages=[
         errmsg('xx_msgkey_xx', 'xx_message')
     ]
 )
@@ -48,8 +48,8 @@ xx_localkey_name_xx = LocalKey(
 
 Generic = LocalKey(
     desc='Generic LocalKey for Error BaseKey Object.',
-    location = _local_location,
-    messages = [
+    location=_local_location,
+    messages=[
         msgkey('GENERICKEY', 'This key not to be used in messaging.'),
         msgkey('UNKNOWN_ERRORKEY', 'Encountered unexpected key: %s'),
         msgkey('DEFAULTKEY', 'Generic Error Message'),
@@ -58,19 +58,19 @@ Generic = LocalKey(
 )
 
 Validation = LocalKey(
-    desc = 'Validation-related LocalKey for Error BaseKey Object.',
-    location = _local_location,
-    messages = [
+    desc='Validation-related LocalKey for Error BaseKey Object.',
+    location=_local_location,
+    messages=[
         msgkey('UNKNOWN', 'An unknown error has caused an exception: %s', ValidationError),
         msgkey('INVALIDKEY', 'Encountered invalid error key: %s'),
     ]
 )
 
 
-Add = LocalKey(
-    desc = 'Errors.Add()-related LocalKey for Error BaseKey Object.',
-    location = _local_location,
-    messages = [
+Add=LocalKey(
+    desc='Errors.Add()-related LocalKey for Error BaseKey Object.',
+    location=_local_location,
+    messages=[
         msgkey('INVALID_MSGFORMAT', 'Incorrect number of message arguments included with '
                                     'message.  Original message: %s; Args: %s'),
         msgkey('INVALID_ERRORKEY', 'Invalid ErrorKey included with message.  Original '

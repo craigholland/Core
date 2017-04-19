@@ -6,7 +6,7 @@ import pprint
 from core.utils import file_util
 from core._system.constants import *
 from core.errors.err_msg_utils import LocalKey, msgkey
-
+from core import core_utils
 
 def dictToInstance(_instance, _dict):
     # print '\n\nLoading:\n'
@@ -19,7 +19,7 @@ def dictToInstance(_instance, _dict):
     return _instance
 
 def createBasicClass(name, bases=(object,), dct={}):
-    cls =  type(name, bases, dct)
+    cls = type(name, bases, dct)
     return cls
 
 def _getErrmsgData(page):
@@ -31,12 +31,13 @@ def _getErrmsgData(page):
 
     # Parse ErrMsg page
     for prop in [x for x in dir(page) if not x.startswith('_')]:
-        prop_val, key = [prop, getattr(page, prop)], None  # Prop: (Name, Value)
+        prop_val, key = [core_utils.convertAllCaps(prop),
+                         getattr(page, prop)], None  # Prop: (Name, Value)
 
         # Filter prop values
         if isinstance(prop_val[1], LocalKey):  # Interpret as a LocalKey Message
             key = 'local_keys'
-            prop_val[0] = prop_val[0].capitalize()
+            prop_val[0] = core_utils.convertAllCaps(prop_val[0])
         elif prop == prop.upper():  # Interpret as a BaseKey Property
             key = 'attributes'
             prop_val[0] = prop_val[0].lower()
@@ -71,7 +72,7 @@ def _check_MsgKeyDefault(local_obj, msg_list):
     if ERRORKEY_SYSTEM_DEFAULTKEYS[2] not in [x.key for x in msg_list]:
         default_msg = msgkey(ERRORKEY_SYSTEM_DEFAULTKEYS[2],
                              'General error in {0} object'.format(
-                                 local_obj._comps[0].capitalize()))
+                                 core_utils.convertAllCaps(local_obj._comps[0])))
         msg_list.append(default_msg)
         local_obj._keys.append(ERRORKEY_SYSTEM_DEFAULTKEYS[2])
     return msg_list

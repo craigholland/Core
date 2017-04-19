@@ -11,6 +11,7 @@ from core._system.constants import *
 from core.errors.err_msg_utils import *
 from core.errors import error_handler_utils as util
 from core.errors.core_error import *
+from core import core_utils
 
 __all__ = [
   #  Error-related classes/instances
@@ -117,8 +118,8 @@ class ErrorMsgManager(object):
 
     basekey_dict = dict([(k, v) for k, v in attr] +   # Load all Attributes
                         zip(['_keys', '_comps'],
-                            [[k[0].capitalize() for k in lcl_keys] or [], # local_keys
-                             [basekey]]))                                 # components
+                            [[core_utils.convertAllCaps(x[0]) for x in lcl_keys] or [],  # local_keys
+                             [basekey]]))                                  # components
 
     Basekey = self._BaseKey__class()  # Dynamically created in _createErrorMsgKeys()
 
@@ -141,21 +142,21 @@ class ErrorMsgManager(object):
           msgkey_list: list, List of MessageKey messages.
       """
     lclkey_name, lclmsg = lcl
-
+    lclkey_name = core_utils.convertAllCaps(lclkey_name)
     # Aggregate attributes into a dict.
     local_dict = {
       'description': lclmsg.desc,
       'location': lclmsg.location,
-      '_comps': [basekey_obj._comps[0], lclkey_name.capitalize()],
-      '_keys': [message.key.capitalize() for message in lclmsg.messages]
+      '_comps': [basekey_obj._comps[0], lclkey_name],
+      '_keys': [core_utils.convertAllCaps(message.key) for message in lclmsg.messages]
     }
 
     # Create LocalKey Object and load its attributes.
-    localkey_obj = self._LocalKey__class() # Dynamically created in _createErrorMsgKeys()
+    localkey_obj = self._LocalKey__class()  # Dynamically created in _createErrorMsgKeys()
     localkey_obj._load(local_dict)
 
     # Assign LocalKey object to BaseKey.
-    setattr(basekey_obj, lclkey_name.capitalize(), localkey_obj)
+    setattr(basekey_obj, lclkey_name, localkey_obj)
 
     return localkey_obj, lclmsg.messages
 
@@ -182,7 +183,7 @@ class ErrorMsgManager(object):
 
 
     # Assign it to parent LocalKey.
-    setattr(local_obj, msg_obj.key.capitalize(), msgkey_obj)
+    setattr(local_obj, core_utils.convertAllCaps(msg_obj.key), msgkey_obj)
 
   def _createErrorMsgKeys(self):
 
@@ -232,7 +233,7 @@ class ErrorMsgManager(object):
     msg_path = (location.rel_thisdir + _ERRMSG_LOCATION).replace('/', '.')
 
     # Read ERRMSG directory; Count each file as a BaseKey
-    self._keys = [x.capitalize() for x in file_util.searchDirectory(msg_path)]  # List of file names in /err_msg folder
+    self._keys = [core_utils.convertAllCaps(x) for x in file_util.searchDirectory(msg_path)]  # List of file names in /err_msg folder
     errmsg_mod = __import__(msg_path, fromlist=[x.lower() for x in self._keys])  #import module: core.errors_old.err_msg
 
     # Ensure 'system.py' file is there.
@@ -274,7 +275,7 @@ class ErrorMsgManager(object):
         if hasattr(new_key, key):
           new_key=getattr(new_key, key)
         elif isinstance(errors, Errors):
-          errors.Add(ErrMsg.ERROR.VALIDATION.INVALIDKEY, key)
+          errors.Add(ErrMsg.Error.Validation.Invalidkey, key)
           return None
         else:
           return None
@@ -465,14 +466,11 @@ class Errors(object):
     else:
       return None
 
-  def _add(self, key, *args):
+  def _add(self, key, args):
     basekey, localkey, msgkey = key._comps
+    message = key.message % args if key.argcount > 0 else key.message
+    self._errors[basekey][localkey][msgkey].append(message)
 
-    if key.argcount == len(args):
-      self.message = key.message % args
-      self._errors[basekey][localkey][msgkey].append(self.message)
-    else:
-      self.Add(ErrMsg.ERROR.ADD.INVALID_MSGFORMAT, key.message, args)
 
   def Add(self, key, *args):
     """Associates one or more messages with a given key_bk.
@@ -483,14 +481,16 @@ class Errors(object):
     """
     temp_error = Errors()
     if ErrMsg.isValidKey(key, ErrMsg._MsgKey__class, temp_error):
-      if not self._keychainExists(key):
-        self._keychainExists(key, True)
-
-      exception = self._validateException(key.exception)
-      if exception:
-        self.Raise(exception, key, args)
+      if key.argcount != len(args):
+        if not self._keychainExists(key):
+          self._keychainExists(key, True)
+        exception = self._validateException(key.exception)
+        if exception:
+          self.Raise(exception, key, args)
+        else:
+          self._add(key, args)
       else:
-        self._add(key, args)
+        self.Add(ErrMsg.Error.Add.Invalid_Msgformat, key.message, args)
 
     elif ErrMsg.isValidKey(key, None, temp_error):
       # Assume GENERIC status
@@ -501,7 +501,7 @@ class Errors(object):
       else:
         self.Add(key, args)
     else:
-      self.Add(ErrMsg.ERROR.ADD.INVALID_ERRORKEY, key.message, args)
+      self.Add(ErrMsg.Error.Add.Invalid_Errorkey, key.message, args)
 
   def AsJson(self):
     """Gets a JSON string representation of the error object.
@@ -550,4 +550,4 @@ class Errors(object):
 
 
 err = Errors()
-err.Add(ErrMsg.Error.Validation.Unknown)
+msg = ErrMsg.Error.Generic.Defaultmsg
