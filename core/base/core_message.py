@@ -28,7 +28,7 @@ import weakref
 
 from core.base.core_field import *
 from core.base.core_enum import *
-from core.errors_old.core_error import *
+from core.errors.core_error import *
 from core.base.meta.core_definition import *
 import core.core_constants as constants
 import core.core_utils as util
@@ -360,7 +360,6 @@ class Message(object):
     Raises:
       AttributeError when trying to assign value that is not a field.
     """
-
     if name in self.__by_name or name.startswith('_Message__'):
       object.__setattr__(self, name, value)
     else:

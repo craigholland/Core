@@ -490,9 +490,7 @@ class StringField(Field):
 class EmailField(StringField):
   """Field definition for email address values."""
 
-
   def validate_element(self, value):
-    print 'First: type: {0}'.format(self.type)
     """Validates field value as first a string, then a valid email address."""
     if super(EmailField, self).validate_element(value):
       valid_uname, valid_domain = validation_util.valid_email(value)

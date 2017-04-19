@@ -9,6 +9,9 @@ from core.errors.err_msg_utils import LocalKey, msgkey
 
 
 def dictToInstance(_instance, _dict):
+    # print '\n\nLoading:\n'
+    # print _instance, '\n'
+    # print _dict, '\n'
     """Transfers the key/value pairs from the dict and assigns them as 
     instance variables."""
 
@@ -16,7 +19,8 @@ def dictToInstance(_instance, _dict):
     return _instance
 
 def createBasicClass(name, bases=(object,), dct={}):
-    return type(name, bases, dct)
+    cls =  type(name, bases, dct)
+    return cls
 
 def _getErrmsgData(page):
     data_dict = {

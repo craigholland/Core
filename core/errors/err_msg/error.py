@@ -1,6 +1,7 @@
 """Error categories and messages specific to the Error Object."""
 
 from core.errors.err_msg_utils import *
+from core.errors.core_error import *
 """
 error_handler.ErrorMsgManager (ErrMsg) creates unique BaseKey object
     from this file (error.py (file) --> Error (object)
@@ -49,10 +50,10 @@ Generic = LocalKey(
     desc='Generic LocalKey for Error BaseKey Object.',
     location = _local_location,
     messages = [
-        errmsg('GENERICKEY', 'This key not to be used in messaging.'),
-        errmsg('UNKNOWN_ERRORKEY', 'Encountered unexpected key: %s'),
-        errmsg('DEFAULTKEY', 'Generic Error Message'),
-        errmsg('UNEXPECTED_DEFAULT', 'Encountered unexpected default key(s): %s')
+        msgkey('GENERICKEY', 'This key not to be used in messaging.'),
+        msgkey('UNKNOWN_ERRORKEY', 'Encountered unexpected key: %s'),
+        msgkey('DEFAULTKEY', 'Generic Error Message'),
+        msgkey('UNEXPECTED_DEFAULT', 'Encountered unexpected default key(s): %s')
     ]
 )
 
@@ -60,8 +61,8 @@ Validation = LocalKey(
     desc = 'Validation-related LocalKey for Error BaseKey Object.',
     location = _local_location,
     messages = [
-        errmsg('UNKNOWN', 'An unknown error has caused an exception: %s'),
-        errmsg('INVALIDKEY', 'Encountered invalid error key: %s'),
+        msgkey('UNKNOWN', 'An unknown error has caused an exception: %s', ValidationError),
+        msgkey('INVALIDKEY', 'Encountered invalid error key: %s'),
     ]
 )
 
@@ -70,9 +71,9 @@ Add = LocalKey(
     desc = 'Errors.Add()-related LocalKey for Error BaseKey Object.',
     location = _local_location,
     messages = [
-        errmsg('INVALID_MSGFORMAT', 'Incorrect number of message arguments included with '
+        msgkey('INVALID_MSGFORMAT', 'Incorrect number of message arguments included with '
                                     'message.  Original message: %s; Args: %s'),
-        errmsg('INVALID_ERRORKEY', 'Invalid ErrorKey included with message.  Original '
+        msgkey('INVALID_ERRORKEY', 'Invalid ErrorKey included with message.  Original '
                                    'message: %s; Args: %s')
     ]
 )

@@ -8,8 +8,9 @@ import pprint
 
 from core.utils import file_util
 from core._system.constants import *
-from core.errors.err_msg_utils import LocalKey, msgkey
+from core.errors.err_msg_utils import *
 from core.errors import error_handler_utils as util
+from core.errors.core_error import *
 
 __all__ = [
   #  Error-related classes/instances
@@ -25,14 +26,31 @@ MESSAGE_KEY: Abbr. Error Description
 """
 
 _ERRMSG_LOCATION = '/err_msg'
-
 def _repr_(slf):
+  """Same repr used by ErrorMsgManager and BaseErrorKey"""
   title = 'ErrorMsgManager'
   func = lambda s, v: ', '.join(getattr(s, v) or [] if hasattr(s, v) else [])
   key_list = func(slf, '_keys')
   comps = func(slf, '_comps')
+  comp_str = '<{0} (comp: [{1}]'.format(title, comps)
+  key_str = '; keys: [{0}]'.format(key_list)
+  if key_list:
+    comp_str += key_str
 
-  return '<{0} (comp: [{1}];keys: [{2}])>'.format(title, comps, key_list)
+  return '{0})>'.format(comp_str)
+
+
+class BaseErrorKey(object):
+
+    def __setattr__(self, name, value):
+      if not self._initialized:
+        object.__setattr__(self, name, value)
+
+    def __repr__(self):
+      return _repr_(self)
+
+    def _load(self, dict):
+      return util.dictToInstance(self, dict)
 
 class ErrorMsgManager(object):
   """Collects and organizes error messages into object structure.
@@ -103,6 +121,7 @@ class ErrorMsgManager(object):
                              [basekey]]))                                 # components
 
     Basekey = self._BaseKey__class()  # Dynamically created in _createErrorMsgKeys()
+
     Basekey._load(basekey_dict)
 
     # Assign BaseKey object to ErrMsg (self)
@@ -149,27 +168,33 @@ class ErrorMsgManager(object):
       """
 
     # Aggregate MsgKey attributes into a dict.
-    msg_dict = {'message': msg_obj.value,
-                'argcount': msg_obj.value.count('%s'),
-                '_comps': local_obj._comps + [msg_obj.key]}
+    msg_dict = {'message': msg_obj.message,
+                'argcount': msg_obj.message.count('%s'),
+                '_comps': local_obj._comps + [msg_obj.key],
+                'exception': msg_obj.exception,
+                '_msgobj': msg_obj
+                }
 
     # Create MessageKey Object and load its attributes
     msgkey_obj = self._MsgKey__class()  # Dynamically created in _createErrorMsgKeys()
     msgkey_obj._load(msg_dict)
+    msgkey_obj._initialized = True
 
 
     # Assign it to parent LocalKey.
     setattr(local_obj, msg_obj.key.capitalize(), msgkey_obj)
 
   def _createErrorMsgKeys(self):
-    base_error_class = util.createBasicClass('BaseErrorKey')
-    setattr(base_error_class, '__repr__', _repr_)
-    setattr(base_error_class, '_load',
-            lambda self, dict: util.dictToInstance(self, dict))
 
+    dct = {
+      '_initialized': False,
+      '_keys': [],
+      '_comps': []
+    }
     for key in ['BaseKey', 'LocalKey', 'MsgKey']:
+
       setattr(self, '_{0}__class'.format(key),
-              util.createBasicClass(key, (base_error_class,)))
+              util.createBasicClass(key, (BaseErrorKey,), dct))
 
   def _validateInput(self, default_keys):
     sys_default_keys = ERRORKEY_SYSTEM_DEFAULTKEYS
@@ -198,7 +223,6 @@ class ErrorMsgManager(object):
       comps = list(ERRORKEY_SYSTEM_DEFAULTKEYS)
 
     self.default_keys = comps
-
 
   def __init__(self, error_keys=None):
     self._validateInput(error_keys)
@@ -235,6 +259,8 @@ class ErrorMsgManager(object):
           # Convert MessageKey Messages to Objects:
           for msg in msgkey_list:
             self._import_messagekeys(lclkey_obj, msg)
+          lclkey_obj._initialized=True
+        basekey_obj._initialized=True
     else:
       print CRITICALFAIL_MSG
       sys.exit(0)
@@ -261,7 +287,6 @@ class ErrorMsgManager(object):
     else:
       return self
 
-
   def _defaultKeyChain(self, key=None, errors=None):
 
     # Get list of components of key (if any)
@@ -273,7 +298,6 @@ class ErrorMsgManager(object):
     chain += self.default_keys[len(chain):]
     return self.getKeyFromString('.'.join(chain))
 
-
   def _validateKey(self, key, cls = None):
     """"Verify that key is an instance of some ErrorKey or ErrMsgManager class."""
 
@@ -282,13 +306,12 @@ class ErrorMsgManager(object):
 
     if cls:
       if inspect.isclass(cls) and cls in key_class_types:
-        classes = [key]
+        classes = [cls]
       else:
         return None
     else:
       classes = key_class_types
     return any([isinstance(key, cls) for cls in classes])
-
 
   def isValidKey(self, key, cls=None, errors=None):
     isvalid = self._validateKey(key, cls)
@@ -298,7 +321,6 @@ class ErrorMsgManager(object):
       # Provided cls not legal
     else:
       return isvalid
-
 
   @property
   def all(self):
@@ -321,6 +343,7 @@ class Errors(object):
 
   def __init__(self):
     self._errors = {}
+    self._exceptions = []
 
   def __nonzero__(self):
     return bool(self._errors)
@@ -389,7 +412,7 @@ class Errors(object):
     if ErrMsg._validateKey(key):
       curr_dict = self._errors
 
-      for i, comp in enumerate(str(key).split('.')):
+      for i, comp in enumerate(key._comps):
         create_type = dict if i < 2 else list
         if comp in curr_dict.keys():
           curr_dict = curr_dict[comp]
@@ -429,37 +452,56 @@ class Errors(object):
     """Gets a copy of the internal errors_old dictionary."""
     return self._errors.copy()
 
-  def Add(self, key, *messages):
+  def _validateException(self, exception):
+    if isinstance(exception, str):
+      exception = exception.split('.')[-1]
+      Err = listChildren(Error)
+      Err_dict = dict(zip([x.__name__ for x in Err], Err))
+
+      return Err_dict.get(exception, None)
+
+    elif inspect.isclass(exception) and issubclass(exception, Error):
+      return exception
+    else:
+      return None
+
+  def _add(self, key, *args):
+    basekey, localkey, msgkey = key._comps
+
+    if key.argcount == len(args):
+      self.message = key.message % args
+      self._errors[basekey][localkey][msgkey].append(self.message)
+    else:
+      self.Add(ErrMsg.ERROR.ADD.INVALID_MSGFORMAT, key.message, args)
+
+  def Add(self, key, *args):
     """Associates one or more messages with a given key_bk.
 
     Args:
-      key_bk: str, the key_bk to associate with a message. If omitted, the messages
-          are associated with the default key_bk.
-      message: str, the message to associate with the key_bk.
-      *messages: additional messages to associate with the key_bk.
+      key: str, the ke to associate with a message. 
+      *args: additional messages to associate with the key.
     """
-    if ErrMsg._validMessageKey(key):
+    temp_error = Errors()
+    if ErrMsg.isValidKey(key, ErrMsg._MsgKey__class, temp_error):
       if not self._keychainExists(key):
         self._keychainExists(key, True)
 
-      basekey, localkey, msgkey = str(key).split('.')
-
-      if key.argcount == len(messages):
-        self.message = key.message % messages
-        self._errors[basekey][localkey][msgkey].append(self.message)
-
+      exception = self._validateException(key.exception)
+      if exception:
+        self.Raise(exception, key, args)
       else:
-        self.Add(ErrMsg.ERROR.ADD.INVALID_MSGFORMAT, key.message, messages)
-    elif ErrMsg._validateKey(key):
+        self._add(key, args)
+
+    elif ErrMsg.isValidKey(key, None, temp_error):
       # Assume GENERIC status
-      temp_error = Errors()
-      key = ErrMsg._defaultKey(key, temp_error)
+
+      key = ErrMsg._defaultKeyChain(key, temp_error)
       if temp_error:
         pass
       else:
-        self.Add(key, messages)
+        self.Add(key, args)
     else:
-      self.Add(ErrMsg.ERROR.ADD.INVALID_ERRORKEY, key.message, messages)
+      self.Add(ErrMsg.ERROR.ADD.INVALID_ERRORKEY, key.message, args)
 
   def AsJson(self):
     """Gets a JSON string representation of the error object.
@@ -495,17 +537,17 @@ class Errors(object):
             for msg in msglist:
               self._errors[basekey][localkey][msgkey].append(msg)
 
-  def Raise(self, exception, key, message, *messages):
+  def Raise(self, exception, key, *args):
     """Adds error message(s) and raises the given exception."""
-    self.Add(key, message, *messages)
-    raise exception(self.AsJson())
-
-  def RaiseIfAny(self, exception):
-    """Raises the given exception with the errors_old as the message, if any."""
-    if self:
-      raise exception(self.AsJson())
+    self._add(key, *args)
+    if exception:
+      raise exception(key.message, *args)
 
   def LogIfAny(self, logging_func):
-    """Logs the errors_old using the given logging_func."""
+    """Logs the errors using the given logging_func."""
     if self:
       logging_func(self.AsJson())
+
+
+err = Errors()
+err.Add(ErrMsg.Error.Validation.Unknown)
