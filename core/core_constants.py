@@ -25,3 +25,6 @@ MAX_FIELD_NUMBER = (2 ** 29) - 1
 # protobuf protocol and may not be used by fields.
 FIRST_RESERVED_FIELD_NUMBER = 19000
 LAST_RESERVED_FIELD_NUMBER = 19999
+
+# URL_HEADER is used for web calls (data_import)
+URL_HEADER = {'User-Agent': 'Mozilla/5.0'}
