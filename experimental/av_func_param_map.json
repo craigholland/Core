@@ -1,0 +1,350 @@
+{
+  "TIME_SERIES_INTRADAY": {
+    "verbose": "TIME SERIES INTRADAY",
+    "desc": "",
+    "req": ["interval"],
+    "opt": ["outputsize"]
+  },
+  "TIME_SERIES_DAILY": {
+    "verbose": "time series daily",
+    "desc": "",
+    "req": [],
+    "opt": ["outputsize"]
+  },
+  "TIME_SERIES_DAILY_ADJUSTED": {
+    "verbose": "time series daily adjusted",
+    "desc": "",
+    "req": [],
+    "opt": ["outputsize"]
+  },
+  "TIME_SERIES_WEEKLY": {
+    "verbose": "time series weekly",
+    "desc": "",
+    "req": [],
+    "opt": []
+  },
+  "TIME_SERIES_MONTHLY": {
+    "verbose": "time series monthly",
+    "desc": "",
+    "req": [],
+    "opt": []
+  },
+  "SMA": {
+    "verbose": "simple moving average",
+    "desc": "",
+    "req": ["interval", "time_period", "series_type"],
+    "opt": []
+  },
+  "EMA": {
+    "verbose": "exponential moving average",
+    "desc": "",
+    "req": ["interval", "time_period", "series_type"],
+    "opt": []
+  },
+  "WMA": {
+    "verbose": "weighted moving average",
+    "desc": "",
+    "req": ["interval", "time_period", "series_type"],
+    "opt": []
+  },
+  "DEMA": {
+    "verbose": "double exponential moving average",
+    "desc": "",
+    "req": ["interval", "time_period", "series_type"],
+    "opt": []
+  },
+  "TEMA": {
+    "verbose": "triple exponential moving average",
+    "desc": "",
+    "req": ["interval", "time_period", "series_type"],
+    "opt": []
+  },
+  "TRIMA": {
+    "verbose": "triangular moving average",
+    "desc": "",
+    "req": ["interval", "time_period", "series_type"],
+    "opt": []
+  },
+  "KAMA": {
+    "verbose": "Kaufman adaptive moving average",
+    "desc": "",
+    "req": ["interval", "time_period", "series_type"],
+    "opt": []
+  },
+  "MAMA": {
+    "verbose": "MESA adaptive moving average",
+    "desc": "",
+    "req": ["interval", "series_type"],
+    "opt": ["fastlimit", "slowlimit"]
+  },
+  "T3": {
+    "verbose": "triple exponential moving average",
+    "desc": "",
+    "req": ["interval", "time_period", "series_type"],
+    "opt": []
+  },
+  "MACD": {
+    "verbose": "moving average convergence / divergence",
+    "desc": "",
+    "req": ["interval", "series_type"],
+    "opt": ["fastperiod", "slowperiod", "signalperiod"]
+  },
+  "MACDEXT": {
+    "verbose": "moving average convergence / divergence values with controllable moving average type",
+    "desc": "",
+    "req": ["interval", "series_type"],
+    "opt": ["fastperiod", "slowperiod", "signalperiod", "fastmatype"]
+  },
+  "STOCH": {
+    "verbose": "stochastic oscillator",
+    "desc": "",
+    "req": ["interval"],
+    "opt": ["fastkperiod", "slowkperiod", "slowdperiod", "slowkmatype", "slowdmatype"]
+  },
+  "STOCHF": {
+    "verbose": "stochastic fast oscillator",
+    "desc": "",
+    "req": ["interval"],
+    "opt": ["fastkperiod", "fastdperiod", "fastdmatype"]
+  },
+  "RSI": {
+    "verbose": "relative strength index",
+    "desc": "",
+    "req": ["interval", "time_period", "series_type"],
+    "opt": []
+  },
+  "STOCHRSI": {
+    "verbose": "stochastic relative strength index",
+    "desc": "",
+    "req": ["interval", "time_period", "series_type"],
+    "opt": ["fastkperiod", "fastdperiod", "fastdmatype"]
+  },
+  "WILLR": {
+    "verbose": "Williams' %R",
+    "desc": "",
+    "req": ["interval", "time_period"],
+    "opt": []
+  },
+  "ADX": {
+    "verbose": "average directional movement index",
+    "desc": "",
+    "req": ["interval", "time_period"],
+    "opt": []
+  },
+  "ADXR": {
+    "verbose": "average directional movement index rating",
+    "desc": "",
+    "req": ["interval", "time_period"],
+    "opt": []
+  },
+  "APO": {
+    "verbose": "absolute price oscillator",
+    "desc": "",
+    "req": ["interval", "series_type"],
+    "opt": ["fastperiod", "slowperiod", "matype"]
+  },
+  "PP0": {
+    "verbose": "percentage price oscillator",
+    "desc": "",
+    "req": ["interval", "series_type"],
+    "opt": ["fastperiod", "slowperiod", "matype"]
+  },
+  "MOM": {
+    "verbose": "momentum",
+    "desc": "",
+    "req": ["interval", "time_period", "series_type"],
+    "opt": []
+  },
+  "BOP": {
+    "verbose": "balance of power",
+    "desc": "",
+    "req": ["interval"],
+    "opt": []
+  },
+  "CCI": {
+    "verbose": "commodity channel index",
+    "desc": "",
+    "req": ["interval", "time_period"],
+    "opt": []
+  },
+  "CMO": {
+    "verbose": "Chande momentum oscillator",
+    "desc": "",
+    "req": ["interval", "time_period", "series_type"],
+    "opt": []
+  },
+  "ROC": {
+    "verbose": "rate of change",
+    "desc": "",
+    "req": ["interval", "time_period", "series_type"],
+    "opt": []
+  },
+  "ROCR": {
+    "verbose": "rate of change ratio",
+    "desc": "",
+    "req": ["interval", "time_period", "series_type"],
+    "opt": []
+  },
+  "AROON": {
+    "verbose": "Aroon values",
+    "desc": "",
+    "req": ["interval", "time_period"],
+    "opt": []
+  },
+  "AROONOSC": {
+    "verbose": "Aroon oscillator",
+    "desc": "",
+    "req": ["interval", "time_period"],
+    "opt": []
+  },
+  "MFI": {
+    "verbose": "money flow index",
+    "desc": "",
+    "req": ["interval", "time_period"],
+    "opt": []
+  },
+  "TRIX": {
+    "verbose": "1-day rate of change of a triple smooth exponential moving average",
+    "desc": "",
+    "req": ["interval", "time_period", "series_type"],
+    "opt": []
+  },
+  "ULTOSC": {
+    "verbose": "ultimate oscillator",
+    "desc": "",
+    "req": ["interval"],
+    "opt": ["timeperiod1", "timeperiod2", "timeperiod3"]
+  },
+  "DX": {
+    "verbose": "directional movement index",
+    "desc": "",
+    "req": ["interval", "time_period"],
+    "opt": []
+  },
+  "MINUS_DI": {
+    "verbose": "minus directional indicator",
+    "desc": "",
+    "req": ["interval", "time_period"],
+    "opt": []
+  },
+  "PLUS_DI": {
+    "verbose": " plus directional indicator ",
+    "desc": "",
+    "req": ["interval", "time_period"],
+    "opt": []
+  },
+  "MINUS_DM": {
+    "verbose": "minus directional movement ",
+    "desc": "",
+    "req": ["interval", "time_period"],
+    "opt": []
+  },
+  "PLUS_DM": {
+    "verbose": " plus directional movement ",
+    "desc": "",
+    "req": ["interval", "time_period"],
+    "opt": []
+  },
+  "BBANDS": {
+    "verbose": "Bollinger bands",
+    "desc": "",
+    "req": ["interval", "time_period", "series_type"],
+    "opt": ["nbdevup", "nbdevdn", "matype"]
+  },
+  "MIDPOINT": {
+    "verbose": "midpoint values",
+    "desc": "",
+    "req": ["interval", "time_period", "series_type"],
+    "opt": []
+  },
+  "MIDPRICE": {
+    "verbose": "midpoint price",
+    "desc": "",
+    "req": ["interval", "time_period"],
+    "opt": []
+  },
+  "SAR": {
+    "verbose": "parabolic SAR",
+    "desc": "",
+    "req": ["interval"],
+    "opt": ["acceleration", "maximum"]
+  },
+  "TRANGE": {
+    "verbose": "true range",
+    "desc": "",
+    "req": ["interval"],
+    "opt": []
+  },
+  "ATR": {
+    "verbose": "average true range",
+    "desc": "",
+    "req": ["interval", "time_period"],
+    "opt": []
+  },
+  "NATR": {
+    "verbose": "normalized average true range",
+    "desc": "",
+    "req": ["interval", "time_period"],
+    "opt": []
+  },
+  "AD": {
+    "verbose": "Chaikin A/D line",
+    "desc": "",
+    "req": ["interval"],
+    "opt": []
+  },
+  "ADOSC": {
+    "verbose": "Chaikin A/D oscillator",
+    "desc": "",
+    "req": ["interval"],
+    "opt": ["fastperiod", "slowperiod"]
+  },
+  "OBV": {
+    "verbose": "on balance volume",
+    "desc": "",
+    "req": ["interval"],
+    "opt": []
+  },
+  "HT_TRENDLINE": {
+    "verbose": "Hilbert transform, instantaneous trendline",
+    "desc": "",
+    "req": ["interval", "series_type"],
+    "opt": []
+  },
+  "HT_SINE": {
+    "verbose": "Hilbert transform, sine wave",
+    "desc": "",
+    "req": ["interval", "series_type"],
+    "opt": []
+  },
+  "HT_TRENDMODE": {
+    "verbose": "Hilbert transform, trend vs cycle mode",
+    "desc": "",
+    "req": ["interval", "series_type"],
+    "opt": []
+  },
+  "HT_DCPERIOD": {
+    "verbose": "Hilbert transform, dominant cycle period",
+    "desc": "",
+    "req": ["interval", "series_type"],
+    "opt": []
+  },
+  "HT_DCPHASE": {
+    "verbose": " Hilbert transform, dominant cycle phase",
+    "desc": "",
+    "req": [],
+    "opt": []
+  },
+  "HT_PHASOR": {
+    "verbose": "Hilbert transform, phasor components",
+    "desc": "",
+    "req": ["interval", "series_type"],
+    "opt": []
+  },
+  "SECTOR": {
+    "verbose": "realtime and historical sector performances calculated from S&P500 incumbents",
+    "desc": "",
+    "req": ["interval", "series_type"],
+    "opt": []
+  }
+}

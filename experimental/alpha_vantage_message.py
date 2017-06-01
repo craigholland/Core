@@ -19,6 +19,9 @@ class TS_Interval(core_message.Enum):
   MIN15 = 15
   MIN30 = 30
   MIN60 = 60
+  DAILY = 100
+  WEEKLY = 101
+  MONTHLY = 102
 
 class AV_Outputsize(core_message.Enum):
   COMPACT = 0
@@ -42,63 +45,65 @@ class AV_MA_Type(core_message.Enum):
   MAMA = 8
 
 class AV_Function(core_message.Enum):
-  TIME_SERIES_INTRADAY = 1
-  TIME_SERIES_DAILY = 2
-  TIME_SERIES_DAILY_ADJUSTED = 3
-  TIME_SERIES_WEEKLY = 4
-  TIME_SERIES_MONTHLY = 5
-  SMA = 6
-  EMA = 7
-  DEMA = 8
-  TEMA = 9
-  TRIMA = 10
-  KAMA = 11
-  MAMA = 12
-  T3 = 13
-  MACD = 14
-  MACDEXT = 15
-  STOCH = 16
-  STOCHF = 17
-  RSI = 18
-  STOCHRSI = 19
-  WILLR = 20
-  ADX = 21
-  ADXR = 22
-  APO = 23
-  PP0 = 24
-  MOM = 25
-  BOP = 26
-  CCI = 27
-  CMO = 28
-  ROC = 29
-  ROCR = 30
-  AROON = 31
-  AROONOSC = 32
-  MFI = 33
-  TRIX = 34
-  ULTOSC = 35
-  DX = 36
-  MINUS_DI = 37
-  PLUS_DI = 38
-  MINUS_DM = 39
-  PLUS_DM = 40
-  BBANDS = 41
-  MIDPOINT = 42
-  MIDPRICE = 43
-  SAR = 44
-  TRANGE = 45
-  ATR = 46
-  NATR = 47
-  AD = 48
-  ADOSC = 49
-  OBV = 50
-  HT_TRENDLINE = 51
-  HT_SINE = 52
-  HT_TRENDMODE = 53
-  HT_DCPERIOD = 54
-  HT_DCPHASE = 55
-  HT_PHASOR = 56
-  SECTOR = 57
+  AD = 1
+  ADOSC = 2
+  ADX = 3
+  ADXR = 4
+  APO = 5
+  AROON = 6
+  AROONOSC = 7
+  ATR = 8
+  BBANDS = 9
+  BOP = 10
+  CCI = 11
+  CMO = 12
+  DEMA = 13
+  DX = 14
+  EMA = 15
+  HT_DCPERIOD = 16
+  HT_DCPHASE = 17
+  HT_PHASOR = 18
+  HT_SINE = 19
+  HT_TRENDLINE = 20
+  HT_TRENDMODE = 21
+  KAMA = 22
+  MACD = 23
+  MACDEXT = 24
+  MAMA = 25
+  MFI = 26
+  MIDPOINT = 27
+  MIDPRICE = 28
+  MINUS_DI = 29
+  MINUS_DM = 30
+  MOM = 31
+  NATR = 32
+  OBV = 33
+  PLUS_DI = 34
+  PLUS_DM = 35
+  PP0 = 36
+  ROC = 37
+  ROCR = 38
+  RSI = 39
+  SAR = 40
+  SECTOR = 41
+  SMA = 42
+  STOCH = 43
+  STOCHF = 44
+  STOCHRSI = 45
+  T3 = 46
+  TEMA = 47
+  TIME_SERIES_DAILY = 48
+  TIME_SERIES_DAILY_ADJUSTED = 49
+  TIME_SERIES_INTRADAY = 50
+  TIME_SERIES_MONTHLY = 51
+  TIME_SERIES_WEEKLY = 52
+  TRANGE = 53
+  TRIMA = 54
+  TRIX = 55
+  ULTOSC = 56
+  WILLR = 57
+  WMA = 58
+
 
 _AV_Param_Validation_Map = {
   'APIKEY' : None,
@@ -160,9 +165,4 @@ class AV_Parameters(core_message.Enum):
   NBDEVDN = 25
   ACCELERATION = 26
   MAXIMUM = 27
-
-class AV_Query(core_message.Message):
-  function = core_message.EnumField(AV_Function, 1, required=True)
-  req_param = core_message.EnumField(AV_Parameters, 2, repeated=True)
-  opt_param = core_message.EnumField(AV_Parameters, 3, repeated=True)
 
