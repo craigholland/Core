@@ -22,7 +22,7 @@ def copyFunction(func, name, args):
                           func.func_code.co_firstlineno,
                           func.func_code.co_lnotab)
   return types.FunctionType(f_code, func.func_globals, name)
-def _av_template(**kwargs): pass
+
   
 
 def GetDataFromURL(url, head=core_constants.URL_HEADER):
@@ -38,23 +38,43 @@ def dict_to_querystring(d):
     q += '{0}={1}'.format(k, v)
   return q
 
-def av_wrapper(func):
+def parseAVjson(val):
+    retval = {}
+    if isinstance(val, dict):
+        for k, v in val.iteritems():
+            retval[str(k)] = parseAVjson(v)
+            if str(k) == '2017-05-10':
+                break
+    elif isinstance(val, list):
+        return [parseAVjson(x) for x in val]
+    elif isinstance(val, str):
+        try:
+            return int(val)
+        except:
+            try:
+                return float(val)
+            except:
+                val = str(val)
+                if val.lower() in ['false','true']:
+                    return ['false', 'true'].index(val.lower())
+                else:
+                    return val
+    return retval
 
-  # print func.__name__
-  def wrapper(*args, **kwargs):
-    print func.__name__
-    print 'Args: {0}\n\nKwargs{1}'.format(args, kwargs)
-    return func(*args, **kwargs)
-
-  return wrapper
 
 class AlphaVantage(object):
 
   _BASE = 'http://www.alphavantage.co/query?'
   _AV_COMMANDS_MAP = 'av_func_param_map.json'
+  _REQD_PARAMS = ['apikey', 'symbol']
 
-  def __init__(self):
+  def __init__(self, symbol=None):
     self.apikey = _API_KEY
+    self.symbol = None
+    if symbol:
+      #validate symbol first
+      self.symbol = symbol
+
     commands = file_util.File('', self._AV_COMMANDS_MAP)
     self.command_dict = json.loads(commands.Read())
     if not self._test_AVFunction():
@@ -63,12 +83,31 @@ class AlphaVantage(object):
 
     for cmd in self.command_dict.keys():
       cmd = str(cmd)
-      setattr(self, cmd, copyFunction(_av_template, cmd, 0))
-      setattr(self, cmd, av_wrapper(getattr(self, cmd)))
+      setattr(self, cmd, copyFunction(self._av_template, cmd, 0))
+      setattr(self, cmd, self.av_wrapper(getattr(self, cmd)))
 
 
 
     self._testConfig()
+
+  @staticmethod
+  def _av_template(**kwargs):
+      pass
+
+  def av_wrapper(self, func):
+    def wrapper(**kwargs):
+      command = func.__name__
+      cmd_dct = self.command_dict[command]
+      req, opt = cmd_dct['req'], cmd_dct['opt']
+      if self.symbol and self._validateCommandParam(kwargs, req, opt):
+        # validate param values
+        kwargs['symbol'] = self.symbol
+        kwargs['apikey'] = _API_KEY
+        kwargs['function'] = command
+        query = dict_to_querystring(kwargs)
+        return parseAVjson(json.loads(GetDataFromURL(self._BASE + query)))
+    return wrapper
+
   def _validateCommandParam(self, params, req, opt):
     """
     Args:
