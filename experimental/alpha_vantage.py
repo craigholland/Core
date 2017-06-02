@@ -38,16 +38,29 @@ def dict_to_querystring(d):
     q += '{0}={1}'.format(k, v)
   return q
 
-def parseAVjson(val):
+def format_timeseries_keys(key_name):
+  titles = ['open', 'close', 'low', 'high', 'volume', 'information',
+            'symbol', 'last refreshed', 'time zone']
+  if any(map(lambda x: x in key_name.lower(), titles)):
+    key_name = key_name.split('. ')[1]
+  return key_name
+
+def parseAVjson(val, cmd):
+    time_series = ["TIME_SERIES_INTRADAY", "TIME_SERIES_DAILY",
+                   "TIME_SERIES_DAILY_ADJUSTED", "TIME_SERIES_WEEKLY",
+                   "TIME_SERIES_MONTHLY"]
     retval = {}
     if isinstance(val, dict):
-        for k, v in val.iteritems():
-            retval[str(k)] = parseAVjson(v)
-            if str(k) == '2017-05-10':
-                break
+        for k, v in sorted(val.iteritems()):
+          if cmd in time_series:
+            k = str(format_timeseries_keys(k))
+          else:
+            k = str(k)
+          retval[k] = parseAVjson(v, cmd)
+
     elif isinstance(val, list):
         return [parseAVjson(x) for x in val]
-    elif isinstance(val, str):
+    elif isinstance(val, str) or isinstance(val, unicode):
         try:
             return int(val)
         except:
@@ -59,6 +72,8 @@ def parseAVjson(val):
                     return ['false', 'true'].index(val.lower())
                 else:
                     return val
+    else:
+      print 'ERROR - Unexpected value type: {0} ({1})'.format(val, type(val))
     return retval
 
 
@@ -71,6 +86,7 @@ class AlphaVantage(object):
   def __init__(self, symbol=None):
     self.apikey = _API_KEY
     self.symbol = None
+    self.commands = []
     if symbol:
       #validate symbol first
       self.symbol = symbol
@@ -83,7 +99,8 @@ class AlphaVantage(object):
 
     for cmd in self.command_dict.keys():
       cmd = str(cmd)
-      setattr(self, cmd, copyFunction(self._av_template, cmd, 0))
+      self.commands.append(cmd)
+      setattr(self, cmd, copyFunction(self._av_template, cmd, 1))
       setattr(self, cmd, self.av_wrapper(getattr(self, cmd)))
 
 
@@ -105,7 +122,7 @@ class AlphaVantage(object):
         kwargs['apikey'] = _API_KEY
         kwargs['function'] = command
         query = dict_to_querystring(kwargs)
-        return parseAVjson(json.loads(GetDataFromURL(self._BASE + query)))
+        return parseAVjson(json.loads(GetDataFromURL(self._BASE + query)), command)
     return wrapper
 
   def _validateCommandParam(self, params, req, opt):
